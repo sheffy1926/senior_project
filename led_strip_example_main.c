@@ -7,11 +7,11 @@
 #include "driver/gpio.h"
 
 #define RESOLUTION_HZ   10000000 // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
-#define LED_GPIO_NUM    5  //LED Strip GPIO pin
-#define LED_NUMBERS     60  //Number of LEDs
+#define LED_GPIO_NUM    2  //LED Strip GPIO pin
+#define LED_NUMBERS     16  //Number of LEDs
 #define BUTTON_GO       22  //GPIO for Go Button
 #define BUTTON_RESET    23  //GPIO for Reset Button
-#define SOUND_BOARD     12  //GPIO for Sound Board
+#define SOUND_BOARD     14  //GPIO for Sound Board
 #define DEBOUNCE_DELAY  50
 #define ON              0
 #define OFF             1
@@ -143,37 +143,47 @@ void app_main(void)
             case RELEASED:
 				//Start 4 Second Timer ---------------------------------------------------------------
 				vTaskDelay(4000 / portTICK_PERIOD_MS);
-                //Activate Sound Board to Play Grenade Sounds
+                //Activate Sound Board to Play Explosion Sound
                 gpio_set_level(SOUND_BOARD, ON);
-                vTaskDelay(100 / portTICK_PERIOD_MS);
-                gpio_set_level(SOUND_BOARD, OFF);
-                //Flash the LEDs 
-                int N = 100;
-                for (int i = 0; i < 10; i++) {
-                    for (int j = i; j < LED_NUMBERS; j ++) {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = i; j < LED_NUMBERS; j++) {
                         // Build RGB pixels
+                        red = 255;
                         green = 255;
                         blue = 255;
-                        red = 255;
                         led_strip_pixels[j * 3 + 0] = green;
-                        led_strip_pixels[j * 3 + 2] = red;
-                        led_strip_pixels[j * 3 + 1] = blue;
+                        led_strip_pixels[j * 3 + 1] = red;
+                        led_strip_pixels[j * 3 + 2] = blue;
                     }
-                    //LEDs On - Flush RGB values to LEDs
                     ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
                     ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));
+                }
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                gpio_set_level(SOUND_BOARD, OFF);
+                //Flash the LEDs 
+                int N = 75;
+                for (int i = 0; i < 10; i++) {
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = i; j < LED_NUMBERS; j ++) {
+                            // Build RGB pixels
+                            led_strip_pixels[j * 3 + 0] = green;
+                            led_strip_pixels[j * 3 + 2] = red;
+                            led_strip_pixels[j * 3 + 1] = blue;
+                        }
+                        //LEDs On - Flush RGB values to LEDs
+                        ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
+                        ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));   
+                    } 
                     vTaskDelay(N / portTICK_PERIOD_MS);
                     //LEDs Off
                     memset(led_strip_pixels, 0, sizeof(led_strip_pixels));
                     ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
                     ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));
                     vTaskDelay(N / portTICK_PERIOD_MS);
-                    N = N + 20;
+                    N = N + 15;
                 }
-                vTaskDelay(10 / portTICK_PERIOD_MS);
-
                 //LEDS to Red
-                 for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 3; i++) {
                     for (int j = i; j < LED_NUMBERS; j++) {
                         // Build RGB pixels
                         red = 255;
@@ -186,6 +196,16 @@ void app_main(void)
                     ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
                     ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));
                 }
+                //You're Dead Audio
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+                gpio_set_level(SOUND_BOARD, ON);
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                gpio_set_level(SOUND_BOARD, OFF);
+                //Return to Spawn Audio 
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                gpio_set_level(SOUND_BOARD, ON);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
+                gpio_set_level(SOUND_BOARD, OFF);
 				//Reset State Machine 
                 buttonGoState = IDLE;
                 break;
