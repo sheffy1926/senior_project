@@ -17,7 +17,7 @@ typedef struct {
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are recieved
 *			interprits data recieved in data packet from remote
-			moves the car according to that data, or shoots laser
+			moves the tank according to that data, or shoots laser
 * Param:
 * Return:
 **************************************************/
@@ -30,11 +30,11 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
         return;
     }
 
-	//move the car accordingly
+	//move the tank accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 								//because we checked the length above
 
-	if(packet->message_type != CAR_COMMAND){
+	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type recieved");
 	} else{
 		gpio_set_level(RF_PIN, packet->rf);
@@ -81,7 +81,7 @@ esp_err_t send_espnow_data(my_data_t data)
 
 /**************************************************
 * Title: init_espnow_master
-* Summary: initializes the wireless messaging of the car
+* Summary: initializes the wireless messaging of the tank
 * Param:
 * Return:
 **************************************************/

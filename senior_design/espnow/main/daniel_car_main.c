@@ -21,13 +21,12 @@
 
 #include "espnow_basic_config.h"
 
-#define OUT_PIN_SEL ((1ULL<<RF_PIN) | (1ULL<<RB_PIN) | (1ULL<<LF_PIN) | (1ULL<<LB_PIN) | (1ULL<<LASER_PIN))
+#define OUT_PIN_SEL ((1ULL<<RF_PIN) | (1ULL<<RB_PIN) | (1ULL<<LF_PIN) | (1ULL<<LB_PIN) | (1ULL<<FIRE_PIN))
 
-static const char *TAG = "car";
+static const char *TAG = "tank";
 rmt_item32_t items [8];
 
-
-void car_hit(uint8_t car_shooting);
+void tank_hit(uint8_t tank_shooting);
 
 void ir_rx_task(void *arg) {
     uint8_t data;
@@ -49,7 +48,7 @@ void ir_rx_task(void *arg) {
 			ESP_LOGI(TAG, "before for loop");
             for (int i = 0; i < 8 && i < num_items; ++i) {
                 if (received_items[i].level0 == 0 && received_items[i].level1 == 1) {
-					ESP_LOGI(TAG, "bit %d receiverd", i);
+					ESP_LOGI(TAG, "bit %d received", i);
 					ESP_LOGI(TAG, "DURATION 0 : %d", received_items[i].duration0);
 					ESP_LOGI(TAG, "DURATION 1 : %d", received_items[i].duration1);
                     if (received_items[i].duration0 > 500 && received_items[i].duration0 > 1500 && received_items[i].duration1 < 1500) {
@@ -58,19 +57,13 @@ void ir_rx_task(void *arg) {
                 }
             }
 			ESP_LOGI(TAG, "after first for loop");
-			ESP_LOGI(TAG, "data receiverd %x\n\n", data);
+			ESP_LOGI(TAG, "data received %x\n\n", data);
 			switch(data){
 				case 0xfc:	//Inky
-					if (CAR_REMOTE_PAIR != INKY) car_hit(INKY);
+					if (TANK_REMOTE_PAIR != INKY) tank_hit(INKY);
 					break;
 				case 0xf9:	//BLINKY
-					if (CAR_REMOTE_PAIR != BLINKY) car_hit(BLINKY);
-					break;
-				case 0xf3:	//PINKY
-					if (CAR_REMOTE_PAIR != PINKY) car_hit(PINKY);
-					break;
-				case 0xe7:	//CLYDE
-					if (CAR_REMOTE_PAIR != CLYDE) car_hit(CLYDE);
+					if (TANK_REMOTE_PAIR != BLINKY) tank_hit(BLINKY);
 					break;
 				default:
 					break;
@@ -78,7 +71,7 @@ void ir_rx_task(void *arg) {
 
             // Check if stop bit is valid
             //if (num_items >= 9 && received_items[8].level0 == 1 && received_items[8].level1 == 0 && received_items[8].duration0 > 1500 && received_items[8].duration1 > 500 && received_items[8].duration1 < 1500) {
-            //    car_hit(data);
+            //    tank_hit(data);
             //}
 
             // Free the memory allocated for received_items
@@ -92,14 +85,14 @@ static void IR_init(){
 	//initialize IR receiving
 	rmt_config_t rmt_tx_config = {
 		.channel = RMT_TX_CHANNEL,
-		.gpio_num = LASER_PIN,
+		.gpio_num = FIRE_PIN,
 		.clk_div = 150,
 		.rmt_mode = RMT_MODE_TX,
 		.tx_config = {
-			.carrier_freq_hz = 38000,
-			.carrier_duty_percent = 50,
-			.carrier_level = RMT_CARRIER_LEVEL_HIGH,
-			.carrier_en = true,
+			.tankrier_freq_hz = 38000,
+			.tankrier_duty_percent = 50,
+			.tankrier_level = RMT_TANKRIER_LEVEL_HIGH,
+			.tankrier_en = true,
 			.loop_en = false,
 			.idle_level = RMT_IDLE_LEVEL_LOW,
 			.idle_output_en = true,
@@ -113,10 +106,10 @@ static void IR_init(){
 		.clk_div = 150,
 		.rmt_mode = RMT_MODE_RX,
 		.rx_config = {
-			.carrier_freq_hz = 38000,
-			.carrier_duty_percent = 50,
-			.carrier_level = RMT_CARRIER_LEVEL_HIGH,
-			.rm_carrier = true,
+			.tankrier_freq_hz = 38000,
+			.tankrier_duty_percent = 50,
+			.tankrier_level = RMT_TANKRIER_LEVEL_HIGH,
+			.rm_tankrier = true,
 			.filter_ticks_thresh = 100,
 			.filter_en = true,
 			.idle_threshold = 12000,
@@ -131,28 +124,20 @@ static void IR_init(){
 	ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
 	ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 1000, 0));
 
-
 	//start the RMT receiver
 	rmt_rx_start(RMT_RX_CHANNEL, true);
 
 	//create IR receive task
 	xTaskCreate(ir_rx_task, "ir_rx_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
 	
-
 	//create the message for shooting it later
 	uint8_t data;
-	switch(CAR_REMOTE_PAIR){
+	switch(TANK_REMOTE_PAIR){
 		case INKY:
 			data = 2;
 			break;
 		case BLINKY:
 			data = 4;
-			break;
-		case PINKY:
-			data = 8;
-			break;
-		case CLYDE:
-			data = 16;
 			break;
 		default:
 			data = 255;
@@ -172,10 +157,6 @@ static void IR_init(){
 			items[i].level1 = 1;
 		}
 	}
-		//items[8].duration0 = 1000;
-		//items[8].level0 = 0;
-		//items[8].duration1 = 2000;
-		//items[8].level1 = 1;
 
 	for(int i=0; i<8; i++){
 		ESP_LOGI(TAG, "BIT %d", i);
@@ -185,11 +166,11 @@ static void IR_init(){
 	}
 }
 
-void car_hit(uint8_t car_shooting){ //file ????
+void tank_hit(uint8_t tank_shooting){ //file ????
 	my_data_t data;
 	data.message_type = HIT_REPORT;
-	data.car_shooting = car_shooting;//TODO get id of car shooting
-	data.car_shot = CAR_ID;
+	data.tank_shooting = tank_shooting;//TODO get id of tank shooting
+	data.tank_shot = TANK_ID;
 
 	//send it
 	ESP_LOGI(TAG, "sending hit report");
@@ -202,7 +183,6 @@ void car_hit(uint8_t car_shooting){ //file ????
 
 void app_main(void)
 {
-
     //zero-initialize the config structure.
     gpio_config_t io_conf = {};
     //disable interrupt
@@ -218,14 +198,12 @@ void app_main(void)
     //configure GPIO with the given settings
     gpio_config(&io_conf);
 
-    
 	//init espnow
     init_espnow_master();
 
 	//init ir
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
-	IR_init();
-
+	IR_init()
 
 	ESP_LOGI(TAG, "before main loop");
 	while(1){
