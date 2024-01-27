@@ -26,9 +26,9 @@
 static const char *TAG = "tank";
 rmt_item32_t items [8];
 
-void tank_hit(uint8_t tank_shooting);
+//void tank_hit(uint8_t tank_shooting);
 
-void ir_rx_task(void *arg) {
+void TT_rx_task(void *arg) {
     uint8_t data;
     RingbufHandle_t rb = NULL;
 
@@ -60,10 +60,10 @@ void ir_rx_task(void *arg) {
 			ESP_LOGI(TAG, "data received %x\n\n", data);
 			switch(data){
 				case 0xfc:	//Inky
-					if (TANK_REMOTE_PAIR != INKY) tank_hit(INKY);
+					if (TANK_REMOTE_PAIR != LINK) tank_hit(LINK);
 					break;
-				case 0xf9:	//BLINKY
-					if (TANK_REMOTE_PAIR != BLINKY) tank_hit(BLINKY);
+				case 0xf9:	//ZELDA
+					if (TANK_REMOTE_PAIR != ZELDA) tank_hit(ZELDA);
 					break;
 				default:
 					break;
@@ -81,8 +81,8 @@ void ir_rx_task(void *arg) {
     }
 }
 
-static void IR_init(){
-	//initialize IR receiving
+static void TT_init(){
+	//initialize Target Tracking Sensors and Emitters
 	rmt_config_t rmt_tx_config = {
 		.channel = RMT_TX_CHANNEL,
 		.gpio_num = FIRE_PIN,
@@ -133,10 +133,10 @@ static void IR_init(){
 	//create the message for shooting it later
 	uint8_t data;
 	switch(TANK_REMOTE_PAIR){
-		case INKY:
+		case LINK:
 			data = 2;
 			break;
-		case BLINKY:
+		case ZELDA:
 			data = 4;
 			break;
 		default:
@@ -166,7 +166,7 @@ static void IR_init(){
 	}
 }
 
-void tank_hit(uint8_t tank_shooting){ //file ????
+/*void tank_hit(uint8_t tank_shooting){ //file ????
 	my_data_t data;
 	data.message_type = HIT_REPORT;
 	data.tank_shooting = tank_shooting;//TODO get id of tank shooting
@@ -179,7 +179,7 @@ void tank_hit(uint8_t tank_shooting){ //file ????
 	ESP_LOGE(TAG, "error sending hit_report message");
 	}
 	return;
-}
+}*/
 
 void app_main(void)
 {
@@ -201,9 +201,9 @@ void app_main(void)
 	//init espnow
     init_espnow_master();
 
-	//init ir
+	//init target tracking 
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
-	IR_init()
+	TT_init()
 
 	ESP_LOGI(TAG, "before main loop");
 	while(1){

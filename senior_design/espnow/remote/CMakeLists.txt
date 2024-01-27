@@ -1,3 +1,3 @@
 idf_component_register(
-    SRCS "espnow_main.c"
+    SRCS "remote.c"
 INCLUDE_DIRS ".")

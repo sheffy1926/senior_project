@@ -1,3 +1,3 @@
 idf_component_register(
-    SRCS "espnow_main.c"
+    SRCS "tank.c" "espnow_custom.c"
 INCLUDE_DIRS ".")

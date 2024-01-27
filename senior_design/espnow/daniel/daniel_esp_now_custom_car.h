@@ -26,8 +26,9 @@
 /**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are recieved
-*			interprits data recieved in data packet from remote
-			moves the tank according to that data, or shoots laser
+*			interprets data recieved in data packet from remote
+			moves the tank according to that data, activates flywheels
+			or fires turret
 * Param:
 * Return:
 **************************************************/
@@ -35,7 +36,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
 
 /**************************************************
 * Title: send_espnow_data
-* Summary: sends an esp_now message to the score_board
+* Summary: sends an esp_now message to the remote
 * Param:
 * Return:
 **************************************************/

@@ -32,8 +32,6 @@
 
 #define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT))
 
-SSD1306_t screen;
-
 uint32_t last_interrupt_time = 0;
 #define DEBOUNCE_TIME 1
 
@@ -58,36 +56,11 @@ static EventGroupHandle_t s_evt_group;
 // #define MY_ESPNOW_WIFI_MODE WIFI_MODE_AP
 // #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_AP
 
-//handle for boot text task
-TaskHandle_t boot_text_handle = NULL;
-
-/**************************************************
-* Title: boot text
-* Summary: prints boot text to screen while waiting for a message form base station
-* Param:	none
-* Return:	none
-**************************************************/
-void boot_text_task(void *args){
-	while(1){
-		ssd1306_clear_screen(&screen, false);
-		ssd1306_contrast(&screen, 0xff);
-		char boot_text[20];
-		getFullLine(boot_text, true);
-		char *e = strchr(boot_text, ' ');
-		int space = (int)(e-boot_text);
-		ssd1306_display_text(&screen, 0, boot_text, space, false);
-		ssd1306_display_text(&screen, 1, &(boot_text[space]), 20-space, false);
-		
-		ssd1306_display_text(&screen, 3, "connecting to", 13, true);
-		ssd1306_display_text(&screen, 4, "base station", 13, true);
-		vTaskDelay(3000 / portTICK_PERIOD_MS);
-	}
-}
-
 /**************************************************
 * Title:	recv_cb
-* Summary:	call_back for when espnow messages are recieved, updates the scores and prints to screen
-* Param:	mac addr-> mac address of the sender (base station) 
+* Summary:	call_back for when espnow messages are received, 
+			activates flywheels and fires turret
+* Param:	mac addr-> mac address of the sender (tank) 
 *			data-> data packet of my_data_t
 *			len -> len of message recieved
 * Return:	none
@@ -108,7 +81,7 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 								//because we checked the length above
 
-	if(packet->message_type != SCORE_UPDATE){
+	/*if(packet->message_type != SCORE_UPDATE){
 		ESP_LOGE(TAG, "wrong message_type recieved");
 	} else{
 		ESP_LOGD(TAG, "score has been updated. score: %d\tlife_points%d", packet->updated_score, packet->updated_life_points);
@@ -124,7 +97,7 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 		itoa(packet->updated_life_points, num_string, 10);
 		char life_points_string[] = {'l', 'i', 'f', 'e', ':', ' ',  num_string[0], num_string[1], num_string[2]};
 		ssd1306_display_text(&screen, 1, life_points_string, 9, false);
-	}
+	}*/
 
 
     //ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
@@ -188,7 +161,12 @@ static esp_err_t send_espnow_data(void)
 	data.rb = !(gpio_get_level(RB_BUT));
 	data.lf = !(gpio_get_level(LF_BUT));
 	data.lb = !(gpio_get_level(LB_BUT));
-	data.shoot_laser = !(gpio_get_level(FIRE_BUT));
+	data.fire_turret = !(gpio_get_level(FIRE_BUT));
+
+	//populate data
+	data.message_type = FIRE_COMMAND;
+	data.fire_turret = !(gpio_get_level(FIRE_BUT));
+	data.act_flywheels = !(gpio_get_level(FW_BUT));
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
@@ -197,7 +175,6 @@ static esp_err_t send_espnow_data(void)
         ESP_LOGE(TAG, "Send error (%d)", err);
         return ESP_FAIL;
     }
-
 
     //ESP_LOGI(TAG, "Sent!"); //because we're sending so many messages, just log the failures
     return ESP_OK;
@@ -256,58 +233,23 @@ void app_main(void)
 	//enable configurations
 	gpio_config(&io_conf);
 
-	//TODO change thses pins
     //install gpio isr service
     gpio_install_isr_service(0);
     //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(RF_BUT,    gpio_isr_handler, (void*) RF_BUT   );
-    gpio_isr_handler_add(RB_BUT,    gpio_isr_handler, (void*) RB_BUT   );
-    gpio_isr_handler_add(LF_BUT,    gpio_isr_handler, (void*) LF_BUT   );
-    gpio_isr_handler_add(LB_BUT,    gpio_isr_handler, (void*) LB_BUT   );
+    gpio_isr_handler_add(RF_BUT,   gpio_isr_handler, (void*) RF_BUT   );
+    gpio_isr_handler_add(RB_BUT,   gpio_isr_handler, (void*) RB_BUT   );
+    gpio_isr_handler_add(LF_BUT,   gpio_isr_handler, (void*) LF_BUT   );
+    gpio_isr_handler_add(LB_BUT,   gpio_isr_handler, (void*) LB_BUT   );
     gpio_isr_handler_add(FIRE_BUT, gpio_isr_handler, (void*) FIRE_BUT);
-
 
     init_espnow_slave();
 	ESP_LOGD(TAG, "esp initialization complete");
-	
-#if CONFIG_I2C_INTERFACE
-	ESP_LOGI(TAG, "INTERFACE is i2c");
-	ESP_LOGI(TAG, "CONFIG_SDA_GPIO=%d",CONFIG_SDA_GPIO);
-	ESP_LOGI(TAG, "CONFIG_SCL_GPIO=%d",CONFIG_SCL_GPIO);
-	ESP_LOGI(TAG, "CONFIG_RESET_GPIO=%d",CONFIG_RESET_GPIO);
-	i2c_master_init(&screen, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
-#endif // CONFIG_I2C_INTERFACE
-
-#if CONFIG_FLIP
-	screen._flip = true;
-	ESP_LOGW(TAG, "Flip upside down");
-#endif
-
-#if CONFIG_SSD1306_128x64
-	ESP_LOGI(TAG, "Panel is 128x64");
-	ssd1306_init(&screen, 128, 64);
-#endif // CONFIG_SSD1306_128x64
-
-	//for testing screen
-	//ssd1306_clear_screen(&screen, false);
-	//ssd1306_contrast(&screen, 0xff);
-	//char boot_text[20];
-	//getFullLine(boot_text, true);
-	//char *e = strchr(boot_text, ' ');
-	//int space = (int)(e-boot_text);
-	//ssd1306_display_text(&screen, 0, boot_text, space, false);
-	//ssd1306_display_text(&screen, 1, &(boot_text[space+1]), 20-space, false);
-  	//vTaskDelay(3000 / portTICK_PERIOD_MS);
-	xTaskCreate(boot_text_task, "boot_text_task", 2000, NULL, 10, &boot_text_handle);
 
 	button_queue = xQueueCreate(10, sizeof(button_event_t));
 	xTaskCreate(button_task, "button_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
-
 
 	while(1){
 		send_espnow_data();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
-
-
 }

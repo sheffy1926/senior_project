@@ -1,10 +1,8 @@
-#include "esp_now_custom.h"
+#include "espnow_custom.h"
 #include "driver/rmt.h"
 
-
 //extern static const char *TAG;
-
-static const char *TAG = "esp_custom";
+static const char *TAG = "tank_espnow_custom";
 extern rmt_item32_t items [8];
 
 typedef struct {
@@ -16,68 +14,73 @@ typedef struct {
 /**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are recieved
-*			interprits data recieved in data packet from remote
-			moves the tank according to that data, or shoots laser
+*			interprets data received in data packet from remote
+			moves the tank according to that data, activates flywheels,
+            or fires turret
 * Param:
 * Return:
 **************************************************/
 void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
-    
     if(len != sizeof(my_data_t))
     {
         ESP_LOGE(TAG, "Unexpected data length: %d != %u", len, sizeof(my_data_t));
         return;
     }
 
-	//move the tank accordingly
+	//move the tank, activate flywheels or fire turret accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 								//because we checked the length above
 
 	if(packet->message_type != TANK_COMMAND){
-		ESP_LOGE(TAG, "wrong message_type recieved");
+		ESP_LOGE(TAG, "wrong message_type received");
 	} else{
 		gpio_set_level(RF_PIN, packet->rf);
 		gpio_set_level(RB_PIN, packet->rb);
 		gpio_set_level(LF_PIN, packet->lf);
 		gpio_set_level(LB_PIN, packet->lb);
-		if(packet->shoot_laser){
-			ESP_LOGI(TAG, "shooting laser");
-			//fire the laser
-			rmt_write_items(RMT_TX_CHANNEL, items, 8, true);
-			
-		}
+	}
+
+    if(packet->message_type != FIRE_COMMAND){
+		ESP_LOGE(TAG, "wrong message_type received");
+	} else{
+		gpio_set_level(FIRE_PIN, packet->fire_turret);
+		gpio_set_level(FW_PIN, packet->activate_fw);
 	}
 
     //ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
 	return;
 }
 
-
 /**************************************************
 * Title: send_espnow_data
-* Summary: sends an esp_now message to the score_board
+* Summary: sends an esp_now message to the remote
 * Param:
 * Return:
 **************************************************/
 esp_err_t send_espnow_data(my_data_t data)
 {
-    const uint8_t destination_mac[] = SCORE_BOARD_MAC;
+    const uint8_t destination_mac[] = REMOTE_MAC;
+    static my_data_t data;
 
+    //populate data
+	data.message_type = TURRET_COMMAND;
+	data.fw_active = !(gpio_get_level(FW_LED));
+	data.turret_firing = !(gpio_get_level(FIRE_LED_R));
+    data.turret_firing = !(gpio_get_level(FIRE_LED_G));
+    data.turret_firing = !(gpio_get_level(FIRE_LED_B));
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
     if(err != ESP_OK)
     {
-        ESP_LOGE(TAG, "Send error (%x)", err);
+        ESP_LOGE(TAG, "Send error (%d)", err);
         return ESP_FAIL;
     }
-
 
     ESP_LOGI(TAG, "Sent!");
     return ESP_OK;
 }
-
 
 /**************************************************
 * Title: init_espnow_master
@@ -108,10 +111,9 @@ void init_espnow_master(void)
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK) );
 
     const esp_now_peer_info_t broadcast_destination = {
-        .peer_addr = SCORE_BOARD_MAC,
+        .peer_addr = REMOTE_MAC,
         .channel = MY_ESPNOW_CHANNEL,
         .ifidx = MY_ESPNOW_WIFI_IF
     };
     ESP_ERROR_CHECK( esp_now_add_peer(&broadcast_destination) );
 }
-
