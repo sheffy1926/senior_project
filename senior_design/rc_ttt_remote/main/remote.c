@@ -28,7 +28,8 @@
 
 #include "espnow_basic_config.h"
 
-#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT))
+#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT) | (1ULL<<FW_BUT) |
+        (1ULL<<FW_LED) | (1ULL<<FIRE_LED_R) | (1ULL<<FIRE_LED_G) | (1ULL<<FIRE_LED_B))
 
 uint32_t last_interrupt_time = 0;
 #define DEBOUNCE_TIME 1

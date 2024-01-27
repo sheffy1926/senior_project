@@ -10,7 +10,6 @@ typedef struct {
     my_data_t data;
 } recv_packet_t;
 
-
 /**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are recieved
@@ -47,8 +46,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 		gpio_set_level(FIRE_PIN, packet->fire_turret);
 		gpio_set_level(FW_PIN, packet->activate_fw);
 	}
-
-    //ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
 	return;
 }
 
@@ -64,11 +61,9 @@ esp_err_t send_espnow_data(my_data_t data)
     static my_data_t data;
 
     //populate data
-	data.message_type = TURRET_COMMAND;
-	data.fw_active = !(gpio_get_level(FW_LED));
-	data.turret_firing = !(gpio_get_level(FIRE_LED_R));
-    data.turret_firing = !(gpio_get_level(FIRE_LED_G));
-    data.turret_firing = !(gpio_get_level(FIRE_LED_B));
+	data.message_type = FIRE_COMMAND;
+	data.fw_active = !(gpio_get_level(FW_PIN));
+	data.turret_firing = !(gpio_get_level(FIRE_PIN));
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));

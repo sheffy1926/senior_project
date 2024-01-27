@@ -22,7 +22,6 @@
 #include "esp_crc.h"
 
 #include "espnow.h"
-#include "espnow_basic_config.h"
 
 #define ESPNOW_MAXDELAY 512
 
