@@ -1,9 +1,7 @@
 #include "espnow_custom.h"
-#include "driver/rmt.h"
 
 //extern static const char *TAG;
 static const char *TAG = "tank_espnow_custom";
-extern rmt_item32_t items [8];
 
 typedef struct {
     uint8_t sender_mac_addr[ESP_NOW_ETH_ALEN];
@@ -12,7 +10,7 @@ typedef struct {
 
 /**************************************************
 * Title:	recv_cb
-* Summary:	call back function called when esp_now messages are recieved
+* Summary:	call back function called when esp_now messages are received
 *			interprets data received in data packet from remote
 			moves the tank according to that data, activates flywheels,
             or fires turret
@@ -34,10 +32,30 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type received");
 	} else{
-		gpio_set_level(RF_PIN, packet->rf);
+		/*gpio_set_level(RF_PIN, packet->rf);
 		gpio_set_level(RB_PIN, packet->rb);
 		gpio_set_level(LF_PIN, packet->lf);
-		gpio_set_level(LB_PIN, packet->lb);
+		gpio_set_level(LB_PIN, packet->lb);*/
+
+        //Right Forward turn LED to White
+        gpio_set_level(R_LED_R, packet->rf);
+		gpio_set_level(R_LED_G, packet->rf);
+		gpio_set_level(R_LED_B, packet->rf);
+
+        //Right Back turn LED to Red
+        gpio_set_level(R_LED_R, packet->rb);
+		gpio_set_level(R_LED_G, 0);
+		gpio_set_level(R_LED_B, 0);
+
+        //Left Forward turn LED to White
+		gpio_set_level(L_LED_R, packet->lf);
+        gpio_set_level(L_LED_G, packet->lf);
+        gpio_set_level(L_LED_B, packet->lf);
+
+        //Left Back turn LED to Red
+        gpio_set_level(R_LED_R, packet->lb);
+		gpio_set_level(R_LED_G, 0);
+		gpio_set_level(R_LED_B, 0);
 	}
 
     if(packet->message_type != FIRE_COMMAND){
@@ -58,7 +76,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 esp_err_t send_espnow_data(my_data_t data)
 {
     const uint8_t destination_mac[] = REMOTE_MAC;
-    static my_data_t data;
 
     //populate data
 	data.message_type = FIRE_COMMAND;
@@ -102,7 +119,8 @@ void init_espnow_master(void)
     ESP_ERROR_CHECK( esp_wifi_set_protocol(MY_ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
 #endif
     ESP_ERROR_CHECK( esp_now_init() );
-    ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb) );
+    ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb) ); //Gives a warning because it is an incompatiable type but it still builds 
+    //ESP_ERROR_CHECK( esp_now_register_send_cb(send_espnow_data) );
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK) );
 
     const esp_now_peer_info_t broadcast_destination = {

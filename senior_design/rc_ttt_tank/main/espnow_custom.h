@@ -3,6 +3,7 @@
 #define CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY 1
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -22,6 +23,13 @@
 
 #define MY_ESPNOW_WIFI_MODE WIFI_MODE_STA
 #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
+
+//Prototypes
+/*static void target_tracking_init(void); 
+int target_tracking_task(void);
+static void turret_rotation_init(void);
+void turret_rotation_task (int target_direction);*/
+
 
 /**************************************************
 * Title:	recv_cb

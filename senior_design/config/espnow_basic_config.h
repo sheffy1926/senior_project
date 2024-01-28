@@ -22,19 +22,18 @@
 //#define RF_PIN 12
 //#define RB_PIN 13
 //#define LF_PIN 2
-//#define LB_PIN 4
-//#define PWM_FIRING_SERVO 14
-//#define PWM_TURRET_SERVO 5 
+//#define LB_PIN 4 
+//#define TURRET_PIN 19
 #define FIRE_PIN 18
 #define FW_PIN 27
-/*#define IR_S_1 22
+/* #define IR_S_1 22
 #define IR_S_2 23
 #define IR_S_3 34
 #define IR_S_4 35
 #define IR_EMIT 21 */
 
-#define RMT_TX_CHANNEL RMT_CHANNEL_0
-#define RMT_RX_CHANNEL RMT_CHANNEL_2
+//#define RMT_TX_CHANNEL RMT_CHANNEL_0
+//#define RMT_RX_CHANNEL RMT_CHANNEL_2
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12
@@ -42,11 +41,11 @@
 #define LF_BUT 2
 #define LB_BUT 4
 #define FIRE_BUT 14
+#define FW_BUT 5
 //#define FIRE_LED 18 //If I switch to using a simple LED
 #define FIRE_LED_R 18
 #define FIRE_LED_G 19
 #define FIRE_LED_B 21
-#define FW_BUT 5
 #define FW_LED 25
 
 //message types
