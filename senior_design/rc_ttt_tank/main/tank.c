@@ -78,14 +78,14 @@ void turret_rotation_task (int target_direction){
 }*/
 
 void firing_task(void *pvParameter) {
-    //gpio_pad_select_gpio(FIRE_SERVO_PIN);
+    esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
     gpio_set_direction(FIRE_SERVO_PIN, GPIO_MODE_OUTPUT);
 
     ledc_timer_config_t timer_conf;
     timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
     timer_conf.timer_num = SERVO_PWM_TIMER;
+	timer_conf.duty_resolution = DUTY_RESOLUTION;
     timer_conf.freq_hz = PWM_FREQUENCY;
-    timer_conf.bit_num = PWM_RESOLUTION;
     ledc_timer_config(&timer_conf);
 
     ledc_channel_config_t ledc_conf;
@@ -94,7 +94,7 @@ void firing_task(void *pvParameter) {
     ledc_conf.channel = SERVO_PWM_CHANNEL;
     ledc_conf.intr_type = LEDC_INTR_DISABLE;
     ledc_conf.timer_sel = SERVO_PWM_TIMER;
-    ledc_conf.duty = 0;
+    ledc_conf.duty = 4;
     ledc_conf.hpoint = 0;
     ledc_channel_config(&ledc_conf);
 
@@ -110,13 +110,13 @@ void firing_task(void *pvParameter) {
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
 
-			vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
+			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 
 			// Rotate the servo back to the starting position (0 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
 
-			vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
+			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 		}
     }
 }
@@ -174,6 +174,7 @@ void app_main(void)
 		//gpio_set_level(LF_PIN, 0);
 		//gpio_set_level(LB_PIN, 0);
 		gpio_set_level(FIRE_SERVO_PIN, ON);
+		//ESP_LOGI(TAG, "FIRE_SERVO_PIN ON");
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		gpio_set_level(FIRE_SERVO_PIN, OFF);
 	}

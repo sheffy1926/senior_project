@@ -49,8 +49,8 @@
 //Firing Servo variables
 #define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0
 #define SERVO_PWM_TIMER     LEDC_TIMER_0
+#define DUTY_RESOLUTION 	8
 #define PWM_FREQUENCY      	50 // Hz
-#define PWM_RESOLUTION     	LEDC_TIMER_13_BIT
 #define DUTY_MIN          	5    // 5% duty cycle (0 degrees)
 #define DUTY_MAX          	10   // 10% duty cycle (180 degrees)
 
