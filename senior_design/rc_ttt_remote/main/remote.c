@@ -51,12 +51,13 @@
 #define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED))
 
 QueueHandle_t button_queue;
+bool led_state = FALSE;
 
 typedef struct{
 	int button_pin;
 } button_event_t;
 
-void firing_buttons(bool led_state);
+void firing_button_task(bool led_state);
 void init_gpio(void);
 
 static const char *TAG = "remote";
@@ -252,13 +253,13 @@ static void button_task(void *args) {
 }
 
 /**************************************************
-* Title:	firing_buttons
+* Title:	firing_button_task
 * Summary:	Function handles firing button interrupts and activates 
             the Flywheels LED and the Firing Busy LED
 * Param:
 * Return:
 **************************************************/
-void firing_buttons(bool led_state){
+void firing_button_task(bool led_state){
     bool fire_but_level;
     bool fw_but_level;
     fire_but_level = gpio_get_level(FIRE_BUT);
@@ -340,18 +341,16 @@ void app_main(void)
     //Initalize Status LEDs to off 
 	gpio_set_level(FIRE_LED, 0);
 	gpio_set_level(FW_LED, 0);
-    
-    bool led_state = FALSE;
 
     init_espnow_master();
 	ESP_LOGD(TAG, "remote esp initialization complete");
 
 	button_queue = xQueueCreate(10, sizeof(button_event_t));
-	xTaskCreate(button_task, "button_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
+	xTaskCreate(button_task, "button_task", 2048, NULL, 4, NULL);
+    xTaskCreate(firing_button_task, "firing_button_task", 2048, NULL, 5, NULL);
     
 	while(1){
 		send_espnow_data();
-        firing_buttons(led_state);
 		vTaskDelay(750 / portTICK_PERIOD_MS);
 	}
 }

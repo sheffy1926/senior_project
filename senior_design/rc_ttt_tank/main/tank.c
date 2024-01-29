@@ -16,6 +16,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_now.h"
+#include "driver/ledc.h"
 #include "driver/gpio.h"
 
 #include "espnow_custom.h"
@@ -76,6 +77,50 @@ void turret_rotation_task (int target_direction){
 
 }*/
 
+void firing_task(void *pvParameter) {
+    //gpio_pad_select_gpio(FIRE_SERVO_PIN);
+    gpio_set_direction(FIRE_SERVO_PIN, GPIO_MODE_OUTPUT);
+
+    ledc_timer_config_t timer_conf;
+    timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf.timer_num = SERVO_PWM_TIMER;
+    timer_conf.freq_hz = PWM_FREQUENCY;
+    timer_conf.bit_num = PWM_RESOLUTION;
+    ledc_timer_config(&timer_conf);
+
+    ledc_channel_config_t ledc_conf;
+    ledc_conf.gpio_num = FIRE_SERVO_PIN;
+    ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf.channel = SERVO_PWM_CHANNEL;
+    ledc_conf.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf.timer_sel = SERVO_PWM_TIMER;
+    ledc_conf.duty = 0;
+    ledc_conf.hpoint = 0;
+    ledc_channel_config(&ledc_conf);
+
+    while (1) {
+        // Wait until the GPIO pin controlling the servo motor is pulled low
+        /*while (gpio_get_level(FIRE_SERVO_PIN) == 1) {
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        }*/
+
+		if(gpio_get_level(FIRE_SERVO_PIN) == 0){
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+			// Rotate the servo forward (180 degrees)
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
+			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+
+			vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
+
+			// Rotate the servo back to the starting position (0 degrees)
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
+			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+
+			vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 1 second
+		}
+    }
+}
+
 void app_main(void)
 {
     //zero-initialize the config structure.
@@ -113,17 +158,23 @@ void app_main(void)
 
 	gpio_set_level(FIRE_PIN, 0);
 	gpio_set_level(FW_PIN, 0);
+	gpio_set_level(FIRE_SERVO_PIN,0);
 
 	//init target tracking and turret rotation
 	//target_tracking_init();
 	//turret_rotation_init();
 
+	xTaskCreate(&firing_task, "firing_task", 2048, NULL, 5, NULL);
+
 	ESP_LOGI(TAG, "Before Tank main loop");
 	while(1){
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		//gpio_set_level(RF_PIN, 0);
 		//gpio_set_level(RB_PIN, 0);
 		//gpio_set_level(LF_PIN, 0);
 		//gpio_set_level(LB_PIN, 0);
-		vTaskDelay(750 / portTICK_PERIOD_MS);
+		gpio_set_level(FIRE_SERVO_PIN, ON);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		gpio_set_level(FIRE_SERVO_PIN, OFF);
 	}
 }

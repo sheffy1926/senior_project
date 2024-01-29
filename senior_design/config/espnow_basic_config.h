@@ -24,6 +24,7 @@
 //#define LF_PIN 2
 //#define LB_PIN 4 
 //#define TURRET_PIN 19
+#define FIRE_SERVO_PIN 19 
 #define FIRE_PIN 18
 #define FW_PIN 27
 /* #define IR_S_1 22
@@ -44,6 +45,14 @@
 #define FW_BUT 5
 #define FIRE_LED 18
 #define FW_LED 25
+
+//Firing Servo variables
+#define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0
+#define SERVO_PWM_TIMER     LEDC_TIMER_0
+#define PWM_FREQUENCY      	50 // Hz
+#define PWM_RESOLUTION     	LEDC_TIMER_13_BIT
+#define DUTY_MIN          	5    // 5% duty cycle (0 degrees)
+#define DUTY_MAX          	10   // 10% duty cycle (180 degrees)
 
 #define ON 0
 #define OFF 1

@@ -15,6 +15,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_now.h"
+#include "driver/ledc.h"
 #include "driver/gpio.h"
 
 #include "sdkconfig.h"
@@ -30,6 +31,15 @@ int target_tracking_task(void);
 static void turret_rotation_init(void);
 void turret_rotation_task (int target_direction);*/
 
+/**************************************************
+* Title:	firing_task
+* Summary:	rotates the firing mechanism servo motor forward
+			180 degrees then rotates it back to the starting position
+			using a PWM signal when the firing pin is pulled low
+* Param:
+* Return:
+**************************************************/
+void firing_task(void *pvParameter);
 
 /**************************************************
 * Title:	recv_cb
