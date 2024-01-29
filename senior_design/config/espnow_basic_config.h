@@ -42,14 +42,13 @@
 #define LB_BUT 4
 #define FIRE_BUT 14
 #define FW_BUT 5
-//#define FIRE_LED 18 //If I switch to using a simple LED
-#define FIRE_LED_R 18
-#define FIRE_LED_G 19
-#define FIRE_LED_B 21
+#define FIRE_LED 18
 #define FW_LED 25
 
 #define ON 0
 #define OFF 1
+#define TRUE 1
+#define FALSE 0
 
 //message types
 #define TANK_COMMAND  	1

@@ -48,13 +48,16 @@
 #include "espnow_basic_config.h"
 
 #define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
-#define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED_R) | (1ULL<<FIRE_LED_G) | (1ULL<<FIRE_LED_B))
+#define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED))
 
 QueueHandle_t button_queue;
 
 typedef struct{
 	int button_pin;
 } button_event_t;
+
+void firing_buttons(bool led_state);
+void init_gpio(void);
 
 static const char *TAG = "remote";
 
@@ -98,9 +101,7 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 		ESP_LOGE(TAG, "wrong message_type received from tank");
 	} /*else{
 		gpio_set_level(FW_LED, packet->fw_active);
-		gpio_set_level(FIRE_LED_R, packet->turret_firing);
-		gpio_set_level(FIRE_LED_G, packet->turret_firing);
-		gpio_set_level(FIRE_LED_B, packet->turret_firing);
+		gpio_set_level(FIRE_LED, packet->turret_firing);
 	}*/
 
 	return;
@@ -129,22 +130,22 @@ static esp_err_t send_espnow_data(void)
 	data.fire_turret = !(gpio_get_level(FIRE_BUT));
 	data.activate_fw = !(gpio_get_level(FW_BUT));
     
-    if(data.rf = !(gpio_get_level(RF_BUT))){
-		ESP_LOGI(TAG, "RF Button Press");
+    if((gpio_get_level(RF_BUT)) == 0){	
+        ESP_LOGI(TAG, "RF Button Press");
 	} 
-    if(data.rb = !(gpio_get_level(RB_BUT))){
+    if((gpio_get_level(RB_BUT)) == 0){
 		ESP_LOGI(TAG, "RB Button Press");
 	}
-    if(data.lf = !(gpio_get_level(LF_BUT))){
+    /*if((gpio_get_level(LF_BUT)) == 0){
 		ESP_LOGI(TAG, "LF Button Press");
-	}
-    if(data.lb = !(gpio_get_level(LB_BUT))){
+	}*/
+    if((gpio_get_level(LB_BUT)) == 0){
 		ESP_LOGI(TAG, "LB Button Press");
 	}
-    if(data.fire_turret = !(gpio_get_level(FIRE_BUT))){
-		ESP_LOGI(TAG, "Fire Button Press");
+    if((gpio_get_level(FIRE_BUT)) == 0){
+		ESP_LOGI(TAG, "FIRE Button Press");
 	}
-    if(data.activate_fw = !(gpio_get_level(FW_BUT))){
+    if((gpio_get_level(FW_BUT)) == 0){
 		ESP_LOGI(TAG, "FW Button Press");
 	}
 
@@ -173,7 +174,6 @@ static void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status
         ESP_LOGE(TAG, "Send cb arg error");
         return;
     }
-
     assert(status == ESP_NOW_SEND_SUCCESS || status == ESP_NOW_SEND_FAIL);
     xEventGroupSetBits(s_evt_group, BIT(status));
 }
@@ -244,11 +244,9 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 **************************************************/
 static void button_task(void *args) {
 	button_event_t button_event;
-    bool led_state = FALSE;
 	while(1){
 		if(xQueueReceive(button_queue, &button_event, portMAX_DELAY) == pdTRUE){
 			send_espnow_data();
-            firing_buttons(led_state);
 		}
 	}
 }
@@ -260,7 +258,7 @@ static void button_task(void *args) {
 * Param:
 * Return:
 **************************************************/
-static void firing_buttons(bool led_state){
+void firing_buttons(bool led_state){
     bool fire_but_level;
     bool fw_but_level;
     fire_but_level = gpio_get_level(FIRE_BUT);
@@ -269,38 +267,33 @@ static void firing_buttons(bool led_state){
     //Toggle Flywheel LED each time button is pushed
     if(fw_but_level == 0){
         vTaskDelay(10 / portTICK_PERIOD_MS);
-        led_state = ~led_state;
+        led_state = !led_state;
         gpio_set_level(FW_LED, led_state);
         ESP_LOGI(TAG,"Flywheel Button Pressed");
     }
 
     //Turn on FIRING LED for 1 sec each time it is pressed
     if(fire_but_level == 0){
-         vTaskDelay(10 / portTICK_PERIOD_MS);
-	    gpio_set_level(FIRE_LED_R, ON);
-	    gpio_set_level(FIRE_LED_G, ON);
-	    gpio_set_level(FIRE_LED_B, ON);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+	    gpio_set_level(FIRE_LED, 1);
         ESP_LOGI(TAG,"Fire Button Pressed");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(FIRE_LED_R, OFF);
-        gpio_set_level(FIRE_LED_G, OFF);
-        gpio_set_level(FIRE_LED_B, OFF);
+        gpio_set_level(FIRE_LED, 0);
     }
     else{
-        gpio_set_level(FIRE_LED_R, OFF);
-        gpio_set_level(FIRE_LED_G, OFF);
-        gpio_set_level(FIRE_LED_B, OFF);
+        gpio_set_level(FIRE_LED, 0);
     }
 }
 
-void app_main(void)
-{
-	// for some reason just having this makes it faster
-	//!note I would prefer not to have it
-    s_evt_group = xEventGroupCreate();
-    assert(s_evt_group);
-
-	//zero-initialize the config structure.
+/**************************************************
+* Title:	init_gpio
+* Summary:	Initialize GPIO pins to correct configuration
+            of modes for input and output pins 
+* Param:
+* Return:
+**************************************************/
+void init_gpio(void){
+    //zero-initialize the config structure.
 	gpio_config_t io_conf = {};
 	//disable interrupt
 	io_conf.intr_type = GPIO_INTR_DISABLE;
@@ -316,9 +309,23 @@ void app_main(void)
 	gpio_config(&io_conf);
 
     //configure output GPIO pins (LEDs)
-    gpio_reset_pin(OUT_PIN_SEL);
-    gpio_set_pull_mode(OUT_PIN_SEL,GPIO_PULLUP_ONLY);
-    gpio_set_direction(OUT_PIN_SEL,GPIO_MODE_OUTPUT);
+    gpio_reset_pin(FIRE_LED);
+    gpio_set_pull_mode(FIRE_LED,GPIO_PULLDOWN_ONLY);
+    gpio_set_direction(FIRE_LED,GPIO_MODE_OUTPUT);
+    gpio_reset_pin(FW_LED);
+    gpio_set_pull_mode(FW_LED,GPIO_PULLDOWN_ONLY);
+    gpio_set_direction(FW_LED,GPIO_MODE_OUTPUT);
+}
+
+void app_main(void)
+{
+	// for some reason just having this makes it faster
+	//!note I would prefer not to have it
+    s_evt_group = xEventGroupCreate();
+    assert(s_evt_group);
+
+    //Initalize GPIO Pins to correct config modes 
+    init_gpio();
 
     //install gpio isr service
     gpio_install_isr_service(0);
@@ -331,10 +338,10 @@ void app_main(void)
     gpio_isr_handler_add(FW_BUT,   gpio_isr_handler, (void*) FW_BUT   );
 
     //Initalize Status LEDs to off 
-	gpio_set_level(FIRE_LED_R, OFF);
-	gpio_set_level(FIRE_LED_G, OFF);
-	gpio_set_level(FIRE_LED_B, OFF);
+	gpio_set_level(FIRE_LED, 0);
 	gpio_set_level(FW_LED, 0);
+    
+    bool led_state = FALSE;
 
     init_espnow_master();
 	ESP_LOGD(TAG, "remote esp initialization complete");
@@ -344,6 +351,7 @@ void app_main(void)
     
 	while(1){
 		send_espnow_data();
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+        firing_buttons(led_state);
+		vTaskDelay(750 / portTICK_PERIOD_MS);
 	}
 }
