@@ -27,11 +27,12 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 
 	//move the tank, activate flywheels or fire turret accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
-								//because we checked the length above
+							  //because we checked the length above
 
-	if(packet->message_type != TANK_COMMAND){
-		ESP_LOGE(TAG, "wrong message_type received");
-	} else{
+	if((packet->message_type != TANK_COMMAND) && (packet->message_type != FIRE_COMMAND)){
+		ESP_LOGE(TAG, "wrong message_type received from remote");
+	} 
+    else if(packet->message_type == TANK_COMMAND){
 		/*gpio_set_level(RF_PIN, packet->rf);
 		gpio_set_level(RB_PIN, packet->rb);
 		gpio_set_level(LF_PIN, packet->lf);
@@ -44,8 +45,8 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 
         //Right Back turn LED to Red
         gpio_set_level(R_LED_R, packet->rb);
-		gpio_set_level(R_LED_G, 0);
-		gpio_set_level(R_LED_B, 0);
+		gpio_set_level(R_LED_G, OFF);
+		gpio_set_level(R_LED_B, OFF);
 
         //Left Forward turn LED to White
 		gpio_set_level(L_LED_R, packet->lf);
@@ -54,15 +55,16 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 
         //Left Back turn LED to Red
         gpio_set_level(R_LED_R, packet->lb);
-		gpio_set_level(R_LED_G, 0);
-		gpio_set_level(R_LED_B, 0);
-	}
+		gpio_set_level(R_LED_G, OFF);
+		gpio_set_level(R_LED_B, OFF);
 
-    if(packet->message_type != FIRE_COMMAND){
-		ESP_LOGE(TAG, "wrong message_type received");
-	} else{
+        ESP_LOGI(TAG, "Remote Driving Data Received!");
+    }
+    else if (packet->message_type == FIRE_COMMAND){
 		gpio_set_level(FIRE_PIN, packet->fire_turret);
 		gpio_set_level(FW_PIN, packet->activate_fw);
+
+        ESP_LOGI(TAG, "Remote Firing Data Received!");
 	}
 	return;
 }
@@ -95,12 +97,12 @@ esp_err_t send_espnow_data(my_data_t data)
 }
 
 /**************************************************
-* Title: init_espnow_master
+* Title: init_espnow_slave
 * Summary: initializes the wireless messaging of the tank
 * Param:
 * Return:
 **************************************************/
-void init_espnow_master(void)
+void init_espnow_slave(void)
 {
     const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_err_t ret = nvs_flash_init();
@@ -120,6 +122,7 @@ void init_espnow_master(void)
 #endif
     ESP_ERROR_CHECK( esp_now_init() );
     ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb) ); //Gives a warning because it is an incompatiable type but it still builds 
+    ESP_LOGD(TAG,"Attempting to register recv_cb for tank");
     //ESP_ERROR_CHECK( esp_now_register_send_cb(send_espnow_data) );
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK) );
 

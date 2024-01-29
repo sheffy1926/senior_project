@@ -51,11 +51,11 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
 esp_err_t send_espnow_data(my_data_t data);
 
 /**************************************************
-* Title: init_espnow_master
+* Title: init_espnow_slave
 * Summary: initializes the wireless messaging of the tank
 * Param:
 * Return:
 **************************************************/
-void init_espnow_master(void);
+void init_espnow_slave(void);
 
 #endif //ESP_NOW_CUSTOM_H

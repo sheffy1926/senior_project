@@ -10,22 +10,18 @@
 */
 
 /****************************************************
- * Remote TODO List:
+ * Remote DONE List:
  * 	Update ESP LOG Message to determine what buttons/LEDs are working correctly
  * 	Make it so Flywheel active LED is turned on directly from remote button press
- * 	Make only feedback send over espnow to remote be if the firing mechanism is in action (maybe)
- * 		Potentially will scrap idea and just delay for 0.5-1 second before accepting firing input
- * 		Could just turn LED on directly from remote and only for brief delay period (need to time mechanism)
- * 	Update PINS to be the correct mode. Buttons as inputs (done together) and LEDs as outputs (manually)
- * 	
- * 	First: configure driving button input to turn on LEDs while button is being pressed in test configuration
- * 	Second: configure flywheel input LED to be toggled on/off by button press (test)
- * 	Third: configure firing input LED each time button is released (test)
- * 	Fourth: test configuration works, develop PWM signal to make a acceleration function for driving input to the motors 
- * 	Fifth: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
- * 	Sixth: reconfigure firing input to activate firing servo motor each time button is released (PWM Signal)
+ * Remote TODO List:
+ * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
+ * 	2: configure flywheel input LED to be toggled on/off by button press (test)
+ * 	3: configure firing input LED each time button is pressed for short duration (test)
+ * 	4: test configuration works, develop PWM signal to make a acceleration function for driving input to the motors 
+ * 	5: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
+ * 	6: reconfigure firing input to activate firing servo motor each time button is released (PWM Signal)
  * 
- * 	3D Design Remote 
+ * 	3D Design Remote. With Grips? 
  * 	Design Custom PCB for Remote
  * 	Buy RC battery for remote or just use 9V batteries?
 ****************************************************/
@@ -51,10 +47,8 @@
 
 #include "espnow_basic_config.h"
 
-#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT) | (1ULL<<FW_BUT) | (1ULL<<FW_LED) | (1ULL<<FIRE_LED_R) | (1ULL<<FIRE_LED_G) | (1ULL<<FIRE_LED_B))
-
-//uint32_t last_interrupt_time = 0;
-//#define DEBOUNCE_TIME 1
+#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
+#define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED_R) | (1ULL<<FIRE_LED_G) | (1ULL<<FIRE_LED_B))
 
 QueueHandle_t button_queue;
 
@@ -88,7 +82,7 @@ static EventGroupHandle_t s_evt_group;
 **************************************************/
 static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
-	ESP_LOGI(TAG, "message received");
+	ESP_LOGI(TAG, "tank message received");
     
     if(len != sizeof(my_data_t))
     {
@@ -101,17 +95,23 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 								//because we checked the length above
 
 	if(packet->message_type != FIRE_COMMAND){
-		ESP_LOGE(TAG, "wrong message_type received");
-	} else{
+		ESP_LOGE(TAG, "wrong message_type received from tank");
+	} /*else{
 		gpio_set_level(FW_LED, packet->fw_active);
 		gpio_set_level(FIRE_LED_R, packet->turret_firing);
 		gpio_set_level(FIRE_LED_G, packet->turret_firing);
 		gpio_set_level(FIRE_LED_B, packet->turret_firing);
-	}
+	}*/
 
 	return;
 }
 
+/**************************************************
+    * Title: send_espnow_data
+    * Summary: sends an esp_now message to the tank
+    * Param:
+    * Return:
+    **************************************************/
 static esp_err_t send_espnow_data(void)
 {
     const uint8_t destination_mac[] = TANK_MAC;
@@ -128,6 +128,25 @@ static esp_err_t send_espnow_data(void)
 	data.message_type = FIRE_COMMAND;
 	data.fire_turret = !(gpio_get_level(FIRE_BUT));
 	data.activate_fw = !(gpio_get_level(FW_BUT));
+    
+    if(data.rf = !(gpio_get_level(RF_BUT))){
+		ESP_LOGI(TAG, "RF Button Press");
+	} 
+    if(data.rb = !(gpio_get_level(RB_BUT))){
+		ESP_LOGI(TAG, "RB Button Press");
+	}
+    if(data.lf = !(gpio_get_level(LF_BUT))){
+		ESP_LOGI(TAG, "LF Button Press");
+	}
+    if(data.lb = !(gpio_get_level(LB_BUT))){
+		ESP_LOGI(TAG, "LB Button Press");
+	}
+    if(data.fire_turret = !(gpio_get_level(FIRE_BUT))){
+		ESP_LOGI(TAG, "Fire Button Press");
+	}
+    if(data.activate_fw = !(gpio_get_level(FW_BUT))){
+		ESP_LOGI(TAG, "FW Button Press");
+	}
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
@@ -137,10 +156,17 @@ static esp_err_t send_espnow_data(void)
         return ESP_FAIL;
     }
 
-	ESP_LOGI(TAG, "Sent!");
+	ESP_LOGI(TAG, "Remote Data Sent!");
     return ESP_OK;
 }
 
+/**************************************************
+* Title:	packet_sent_cb
+* Summary:	function that send the status of the espnow message 
+            if it was a success or a failure
+* Param:
+* Return:
+**************************************************/
 static void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
     if (mac_addr == NULL) {
@@ -152,7 +178,13 @@ static void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status
     xEventGroupSetBits(s_evt_group, BIT(status));
 }
 
-static void init_espnow_slave(void)
+/**************************************************
+* Title:	init_espnow_master
+* Summary:	initializes the wireless messaging of the remote
+* Param:
+* Return:
+**************************************************/
+static void init_espnow_master(void)
 {
     const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_err_t ret = nvs_flash_init();
@@ -171,9 +203,9 @@ static void init_espnow_slave(void)
     ESP_ERROR_CHECK( esp_wifi_set_protocol(MY_ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
 #endif
     ESP_ERROR_CHECK( esp_now_init() );
-	ESP_LOGD(TAG,"attempting to register send_cb");
+	ESP_LOGD(TAG,"attempting to register send_cb for remote");
     ESP_ERROR_CHECK( esp_now_register_send_cb(packet_sent_cb) );
-	ESP_LOGD(TAG,"send_cb registered, attempting to regiester recv_cb");
+	ESP_LOGD(TAG,"send_cb registered, attempting to register recv_cb for remote");
     ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb) );
 	ESP_LOGD(TAG, "registered!");
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK) );
@@ -187,17 +219,14 @@ static void init_espnow_slave(void)
     ESP_ERROR_CHECK( esp_now_add_peer(&broadcast_destination) );
 }
 
-
+/**************************************************
+* Title:	gpio_isr_handler
+* Summary:	Handles the isr whenever any GPIO interrupt occurs
+* Param:
+* Return:
+**************************************************/
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
-    //uint32_t gpio_num = (uint32_t) arg;
-    //xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-	
-	//get current time and check if it's time for a new interrupt
-	//uint32_t current_time = xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
-	//if(current_time - last_interrupt_time < DEBOUNCE_TIME) return; //ignore interrupt
-	//last_interrupt_time = current_time;
-
 	int button_pin = (int)arg;
 	button_event_t button_event = {
 		.button_pin = button_pin,
@@ -205,17 +234,63 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	xQueueSendFromISR(button_queue, &button_event, &xHigherPriorityTaskWoken);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-	//send_espnow_data();
 }
 
+/**************************************************
+* Title:	button_task
+* Summary:	Task handles GPIO button interrupts 
+* Param:
+* Return:
+**************************************************/
 static void button_task(void *args) {
 	button_event_t button_event;
+    bool led_state = FALSE;
 	while(1){
 		if(xQueueReceive(button_queue, &button_event, portMAX_DELAY) == pdTRUE){
 			send_espnow_data();
+            firing_buttons(led_state);
 		}
 	}
+}
+
+/**************************************************
+* Title:	firing_buttons
+* Summary:	Function handles firing button interrupts and activates 
+            the Flywheels LED and the Firing Busy LED
+* Param:
+* Return:
+**************************************************/
+static void firing_buttons(bool led_state){
+    bool fire_but_level;
+    bool fw_but_level;
+    fire_but_level = gpio_get_level(FIRE_BUT);
+    fw_but_level = gpio_get_level(FW_BUT);
+
+    //Toggle Flywheel LED each time button is pushed
+    if(fw_but_level == 0){
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+        led_state = ~led_state;
+        gpio_set_level(FW_LED, led_state);
+        ESP_LOGI(TAG,"Flywheel Button Pressed");
+    }
+
+    //Turn on FIRING LED for 1 sec each time it is pressed
+    if(fire_but_level == 0){
+         vTaskDelay(10 / portTICK_PERIOD_MS);
+	    gpio_set_level(FIRE_LED_R, ON);
+	    gpio_set_level(FIRE_LED_G, ON);
+	    gpio_set_level(FIRE_LED_B, ON);
+        ESP_LOGI(TAG,"Fire Button Pressed");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        gpio_set_level(FIRE_LED_R, OFF);
+        gpio_set_level(FIRE_LED_G, OFF);
+        gpio_set_level(FIRE_LED_B, OFF);
+    }
+    else{
+        gpio_set_level(FIRE_LED_R, OFF);
+        gpio_set_level(FIRE_LED_G, OFF);
+        gpio_set_level(FIRE_LED_B, OFF);
+    }
 }
 
 void app_main(void)
@@ -237,8 +312,13 @@ void app_main(void)
 	io_conf.pull_up_en = 1;
     //interrupt on both edges
     io_conf.intr_type = GPIO_INTR_ANYEDGE;	
-	//enable configurations
+	//configure input GPIO pins with the given settings
 	gpio_config(&io_conf);
+
+    //configure output GPIO pins (LEDs)
+    gpio_reset_pin(OUT_PIN_SEL);
+    gpio_set_pull_mode(OUT_PIN_SEL,GPIO_PULLUP_ONLY);
+    gpio_set_direction(OUT_PIN_SEL,GPIO_MODE_OUTPUT);
 
     //install gpio isr service
     gpio_install_isr_service(0);
@@ -247,20 +327,21 @@ void app_main(void)
     gpio_isr_handler_add(RB_BUT,   gpio_isr_handler, (void*) RB_BUT   );
     gpio_isr_handler_add(LF_BUT,   gpio_isr_handler, (void*) LF_BUT   );
     gpio_isr_handler_add(LB_BUT,   gpio_isr_handler, (void*) LB_BUT   );
-    gpio_isr_handler_add(FIRE_BUT, gpio_isr_handler, (void*) FIRE_BUT);
+    gpio_isr_handler_add(FIRE_BUT, gpio_isr_handler, (void*) FIRE_BUT );
+    gpio_isr_handler_add(FW_BUT,   gpio_isr_handler, (void*) FW_BUT   );
 
     //Initalize Status LEDs to off 
-	gpio_set_level(FIRE_LED_R, 0);
-	gpio_set_level(FIRE_LED_G, 0);
-	gpio_set_level(FIRE_LED_B, 0);
+	gpio_set_level(FIRE_LED_R, OFF);
+	gpio_set_level(FIRE_LED_G, OFF);
+	gpio_set_level(FIRE_LED_B, OFF);
 	gpio_set_level(FW_LED, 0);
 
-    init_espnow_slave();
-	ESP_LOGD(TAG, "esp initialization complete");
+    init_espnow_master();
+	ESP_LOGD(TAG, "remote esp initialization complete");
 
 	button_queue = xQueueCreate(10, sizeof(button_event_t));
 	xTaskCreate(button_task, "button_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
-
+    
 	while(1){
 		send_espnow_data();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);

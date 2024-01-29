@@ -48,6 +48,9 @@
 #define FIRE_LED_B 21
 #define FW_LED 25
 
+#define ON 0
+#define OFF 1
+
 //message types
 #define TANK_COMMAND  	1
 #define FIRE_COMMAND  	2
