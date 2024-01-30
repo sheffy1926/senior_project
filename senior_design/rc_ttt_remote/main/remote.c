@@ -137,9 +137,9 @@ static esp_err_t send_espnow_data(void)
     if((gpio_get_level(RB_BUT)) == 0){
 		ESP_LOGI(TAG, "RB Button Press");
 	}
-    /*if((gpio_get_level(LF_BUT)) == 0){
+    if((gpio_get_level(LF_BUT)) == 0){
 		ESP_LOGI(TAG, "LF Button Press");
-	}*/
+	}
     if((gpio_get_level(LB_BUT)) == 0){
 		ESP_LOGI(TAG, "LB Button Press");
 	}
@@ -308,6 +308,9 @@ void init_gpio(void){
     io_conf.intr_type = GPIO_INTR_ANYEDGE;	
 	//configure input GPIO pins with the given settings
 	gpio_config(&io_conf);
+
+    //configure fire_but and fw_but to only trigger on rising edge
+    
 
     //configure output GPIO pins (LEDs)
     gpio_reset_pin(FIRE_LED);
