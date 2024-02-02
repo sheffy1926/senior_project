@@ -58,8 +58,8 @@ typedef struct{
 	int button_pin;
 } button_event_t;
 
-void firing_buttons(uint8_t fire_but_level);
-void init_gpio(void);
+static void firing_buttons(int fire_but_level);
+static void init_gpio(void);
 
 static const char *TAG = "remote";
 
@@ -105,7 +105,7 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 		gpio_set_level(FW_LED, packet->fw_active);
 		gpio_set_level(FIRE_LED, packet->turret_firing);
 	}*/
-
+    
 	return;
 }
 
@@ -245,25 +245,25 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 **************************************************/
 static void button_task(void *args) {
 	button_event_t button_event;
-    uint8_t fire_but_level;
+    int fire_but_level;
 	while(1){
 		if(xQueueReceive(button_queue, &button_event, portMAX_DELAY) == pdTRUE){
 			send_espnow_data();
             if(button_event.button_pin == FIRE_BUT){
                 fire_but_level = 1;
-                void firing_buttons(fire_but_level);
+                firing_buttons(fire_but_level);
                 vTaskDelay(100 / portTICK_PERIOD_MS);
                 fire_but_level = 0;
             }
             else if (button_event.button_pin == FW_BUT){
                 fire_but_level = 2;
-                void firing_buttons(fire_but_level);
+                firing_buttons(fire_but_level);
                 vTaskDelay(100 / portTICK_PERIOD_MS);
                 fire_but_level = 0;
             }
             else {
                 fire_but_level = 0;
-                void firing_buttons(fire_but_level);
+                firing_buttons(fire_but_level);
             }
 		}
 	}
@@ -276,7 +276,7 @@ static void button_task(void *args) {
 * Param:
 * Return:
 **************************************************/
-void firing_buttons(uint8_t fire_but_level){
+static void firing_buttons(int fire_but_level){
     //Toggle Flywheel LED each time button is pushed
     if(fire_but_level == 2){
         vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -304,7 +304,7 @@ void firing_buttons(uint8_t fire_but_level){
 * Param:
 * Return:
 **************************************************/
-void init_gpio(void){
+static void init_gpio(void){
     //zero-initialize the config structure.
 	gpio_config_t i_conf = {};
 	//disable interrupt
