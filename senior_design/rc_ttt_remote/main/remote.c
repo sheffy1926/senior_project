@@ -47,7 +47,8 @@
 
 #include "espnow_basic_config.h"
 
-#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT) | (1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
+#define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT))
+#define FIRE_PIN_SEL ((1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
 #define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED))
 
 QueueHandle_t button_queue;
@@ -57,7 +58,7 @@ typedef struct{
 	int button_pin;
 } button_event_t;
 
-void firing_button_task(bool led_state);
+void firing_buttons(uint8_t fire_but_level);
 void init_gpio(void);
 
 static const char *TAG = "remote";
@@ -81,7 +82,7 @@ static EventGroupHandle_t s_evt_group;
 			activates flywheels and fires turret
 * Param:	mac addr-> mac address of the sender (tank) 
 *			data-> data packet of my_data_t
-*			len -> len of message recieved
+*			len -> len of message received
 * Return:	none
 **************************************************/
 static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
@@ -157,7 +158,6 @@ static esp_err_t send_espnow_data(void)
         ESP_LOGE(TAG, "Send error (%d)", err);
         return ESP_FAIL;
     }
-
 	ESP_LOGI(TAG, "Remote Data Sent!");
     return ESP_OK;
 }
@@ -245,38 +245,49 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 **************************************************/
 static void button_task(void *args) {
 	button_event_t button_event;
+    uint8_t fire_but_level;
 	while(1){
 		if(xQueueReceive(button_queue, &button_event, portMAX_DELAY) == pdTRUE){
 			send_espnow_data();
+            if(button_event.button_pin == FIRE_BUT){
+                fire_but_level = 1;
+                void firing_buttons(fire_but_level);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+                fire_but_level = 0;
+            }
+            else if (button_event.button_pin == FW_BUT){
+                fire_but_level = 2;
+                void firing_buttons(fire_but_level);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+                fire_but_level = 0;
+            }
+            else {
+                fire_but_level = 0;
+                void firing_buttons(fire_but_level);
+            }
 		}
 	}
 }
 
 /**************************************************
-* Title:	firing_button_task
-* Summary:	Function handles firing button interrupts and activates 
-            the Flywheels LED and the Firing Busy LED
+* Title:	firing_buttons
+* Summary:	Function handles firing button presses and activates 
+            the Flywheels LED and the Busy Firing LED
 * Param:
 * Return:
 **************************************************/
-void firing_button_task(bool led_state){
-    bool fire_but_level;
-    bool fw_but_level;
-    fire_but_level = gpio_get_level(FIRE_BUT);
-    fw_but_level = gpio_get_level(FW_BUT);
-
+void firing_buttons(uint8_t fire_but_level){
     //Toggle Flywheel LED each time button is pushed
-    if(fw_but_level == 0){
+    if(fire_but_level == 2){
         vTaskDelay(10 / portTICK_PERIOD_MS);
         led_state = !led_state;
         gpio_set_level(FW_LED, led_state);
         ESP_LOGI(TAG,"Flywheel Button Pressed");
     }
-
-    //Turn on FIRING LED for 1 sec each time it is pressed
-    if(fire_but_level == 0){
+    //Turn on FIRE LED for 1 sec each time it is pressed
+    if(fire_but_level == 1){
         vTaskDelay(10 / portTICK_PERIOD_MS);
-	    gpio_set_level(FIRE_LED, 1);
+        gpio_set_level(FIRE_LED, 1);
         ESP_LOGI(TAG,"Fire Button Pressed");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         gpio_set_level(FIRE_LED, 0);
@@ -295,30 +306,48 @@ void firing_button_task(bool led_state){
 **************************************************/
 void init_gpio(void){
     //zero-initialize the config structure.
-	gpio_config_t io_conf = {};
+	gpio_config_t i_conf = {};
 	//disable interrupt
-	io_conf.intr_type = GPIO_INTR_DISABLE;
+	i_conf.intr_type = GPIO_INTR_DISABLE;
 	//bit mask of the pins
-	io_conf.pin_bit_mask = IN_PIN_SEL;
+	i_conf.pin_bit_mask = IN_PIN_SEL;
 	//set as input mode
-	io_conf.mode = GPIO_MODE_INPUT;
+	i_conf.mode = GPIO_MODE_INPUT;
 	//enable pull-up mode
-	io_conf.pull_up_en = 1;
+	i_conf.pull_up_en = 1;
     //interrupt on both edges
-    io_conf.intr_type = GPIO_INTR_ANYEDGE;	
+    i_conf.intr_type = GPIO_INTR_ANYEDGE;	
 	//configure input GPIO pins with the given settings
-	gpio_config(&io_conf);
+	gpio_config(&i_conf);
 
-    //configure fire_but and fw_but to only trigger on rising edge
-    
+    //zero-initialize the config structure.
+	gpio_config_t f_conf = {};
+	//disable interrupt
+	f_conf.intr_type = GPIO_INTR_DISABLE;
+	//bit mask of the pins
+	f_conf.pin_bit_mask = FIRE_PIN_SEL;
+	//set as input mode
+	f_conf.mode = GPIO_MODE_INPUT;
+	//enable pull-up mode
+	f_conf.pull_up_en = 1;
+    //interrupt on falling edge
+    f_conf.intr_type = GPIO_INTR_NEGEDGE;	
+	//configure input GPIO pins with the given settings
+	gpio_config(&f_conf);
 
     //configure output GPIO pins (LEDs)
-    gpio_reset_pin(FIRE_LED);
-    gpio_set_pull_mode(FIRE_LED,GPIO_PULLDOWN_ONLY);
-    gpio_set_direction(FIRE_LED,GPIO_MODE_OUTPUT);
-    gpio_reset_pin(FW_LED);
-    gpio_set_pull_mode(FW_LED,GPIO_PULLDOWN_ONLY);
-    gpio_set_direction(FW_LED,GPIO_MODE_OUTPUT);
+    //zero-initialize the config structure.
+	gpio_config_t o_conf = {};
+	//disable interrupt
+	o_conf.intr_type = GPIO_INTR_DISABLE;
+	//bit mask of the pins
+	o_conf.pin_bit_mask = OUT_PIN_SEL;
+	//set as output mode
+	o_conf.mode = GPIO_MODE_OUTPUT;
+	//enable pull-down mode
+	o_conf.pull_down_en = 1;
+	//configure output GPIO pins with the given settings
+	gpio_config(&o_conf);
 }
 
 void app_main(void)
@@ -349,8 +378,7 @@ void app_main(void)
 	ESP_LOGD(TAG, "remote esp initialization complete");
 
 	button_queue = xQueueCreate(10, sizeof(button_event_t));
-	xTaskCreate(button_task, "button_task", 2048, NULL, 4, NULL);
-    xTaskCreate(firing_button_task, "firing_button_task", 2048, NULL, 5, NULL);
+	xTaskCreate(button_task, "button_task", 2048, NULL, 5, NULL);
     
 	while(1){
 		send_espnow_data();
