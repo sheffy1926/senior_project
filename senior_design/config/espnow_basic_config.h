@@ -33,13 +33,10 @@
 #define IR_S_4 35
 #define IR_EMIT 21 */
 
-//#define RMT_TX_CHANNEL RMT_CHANNEL_0
-//#define RMT_RX_CHANNEL RMT_CHANNEL_2
-
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12
 #define RB_BUT 13
-#define LF_BUT 2
+#define LF_BUT 15
 #define LB_BUT 4
 #define FIRE_BUT 14
 #define FW_BUT 5
@@ -58,6 +55,7 @@
 #define OFF 1
 #define TRUE 1
 #define FALSE 0
+#define DEBOUNCE_DELAY_MS 50
 
 //message types
 #define TANK_COMMAND  	1
@@ -110,9 +108,7 @@ typedef struct __attribute__((packed)) {
 
 #define MY_ESPNOW_PMK "pmk1234567890123"
 #define MY_ESPNOW_CHANNEL 1
-
 // #define MY_ESPNOW_ENABLE_LONG_RANGE 1
-
 #define MY_SLAVE_DEEP_SLEEP_TIME_MS 1000
 
 #endif // ESPNOW_BASIC_CONFIG_H

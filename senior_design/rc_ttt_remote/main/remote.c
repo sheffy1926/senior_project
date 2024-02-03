@@ -13,10 +13,11 @@
  * Remote DONE List:
  * 	Update ESP LOG Message to determine what buttons/LEDs are working correctly
  * 	Make it so Flywheel active LED is turned on directly from remote button press
+ *  configure flywheel input LED to be toggled on/off by button press (test)
+ * 	configure firing input LED each time button is pressed for short duration (test)
  * Remote TODO List:
  * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
- * 	2: configure flywheel input LED to be toggled on/off by button press (test)
- * 	3: configure firing input LED each time button is pressed for short duration (test)
+
  * 	4: test configuration works, develop PWM signal to make a acceleration function for driving input to the motors 
  * 	5: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
  * 	6: reconfigure firing input to activate firing servo motor each time button is released (PWM Signal)
@@ -31,6 +32,7 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "freertos/event_groups.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -44,7 +46,6 @@
 #include "driver/gpio.h"
 
 #include "sdkconfig.h"
-
 #include "espnow_basic_config.h"
 
 #define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT))
@@ -105,7 +106,7 @@ static void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 		gpio_set_level(FW_LED, packet->fw_active);
 		gpio_set_level(FIRE_LED, packet->turret_firing);
 	}*/
-    
+
 	return;
 }
 
@@ -129,7 +130,9 @@ static esp_err_t send_espnow_data(void)
 
 	//populate data
 	data.message_type = FIRE_COMMAND;
-	data.fire_turret = !(gpio_get_level(FIRE_BUT));
+    if (led_state == TRUE){
+	    data.fire_turret = !(gpio_get_level(FIRE_BUT));
+    }
 	data.activate_fw = !(gpio_get_level(FW_BUT));
     
     if((gpio_get_level(RF_BUT)) == 0){	
@@ -158,7 +161,7 @@ static esp_err_t send_espnow_data(void)
         ESP_LOGE(TAG, "Send error (%d)", err);
         return ESP_FAIL;
     }
-	ESP_LOGI(TAG, "Remote Data Sent!");
+	//ESP_LOGI(TAG, "Remote Data Sent!");
     return ESP_OK;
 }
 
@@ -200,6 +203,7 @@ static void init_espnow_master(void)
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     ESP_ERROR_CHECK( esp_wifi_set_mode(MY_ESPNOW_WIFI_MODE) );
     ESP_ERROR_CHECK( esp_wifi_start() );
+    vTaskDelay(500 / portTICK_PERIOD_MS);
 #if MY_ESPNOW_ENABLE_LONG_RANGE
     ESP_ERROR_CHECK( esp_wifi_set_protocol(MY_ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
 #endif
@@ -246,26 +250,36 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 static void button_task(void *args) {
 	button_event_t button_event;
     int fire_but_level;
+    TickType_t last_press_time = 0;
+
 	while(1){
 		if(xQueueReceive(button_queue, &button_event, portMAX_DELAY) == pdTRUE){
+            // Perform debouncing for FIRE_BUT and FW_BUT buttons
+            if (button_event.button_pin == FIRE_BUT || button_event.button_pin == FW_BUT) {
+                TickType_t current_time = xTaskGetTickCount();
+                if ((current_time - last_press_time) < pdMS_TO_TICKS(DEBOUNCE_DELAY_MS)) {
+                    // Debounce period not elapsed yet, ignore this press
+                    continue;
+                }
+                last_press_time = current_time;
+                
+                if(button_event.button_pin == FIRE_BUT){
+                    fire_but_level = 1;
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                    firing_buttons(fire_but_level);
+                }
+                else if (button_event.button_pin == FW_BUT){
+                    fire_but_level = 2;
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                    firing_buttons(fire_but_level);
+                }
+                fire_but_level = 0;
+                firing_buttons(fire_but_level);
+            }
+            //Send Button Press Data through ESPNOW
 			send_espnow_data();
-            if(button_event.button_pin == FIRE_BUT){
-                fire_but_level = 1;
-                firing_buttons(fire_but_level);
-                vTaskDelay(100 / portTICK_PERIOD_MS);
-                fire_but_level = 0;
-            }
-            else if (button_event.button_pin == FW_BUT){
-                fire_but_level = 2;
-                firing_buttons(fire_but_level);
-                vTaskDelay(100 / portTICK_PERIOD_MS);
-                fire_but_level = 0;
-            }
-            else {
-                fire_but_level = 0;
-                firing_buttons(fire_but_level);
-            }
-		}
+            
+		} 
 	}
 }
 
@@ -284,16 +298,18 @@ static void firing_buttons(int fire_but_level){
         gpio_set_level(FW_LED, led_state);
         ESP_LOGI(TAG,"Flywheel Button Pressed");
     }
-    //Turn on FIRE LED for 1 sec each time it is pressed
-    if(fire_but_level == 1){
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-        gpio_set_level(FIRE_LED, 1);
-        ESP_LOGI(TAG,"Fire Button Pressed");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(FIRE_LED, 0);
-    }
-    else{
-        gpio_set_level(FIRE_LED, 0);
+    //Turn on FIRE LED for 1 sec each time it is pressed 
+    if (led_state == TRUE){
+        if(fire_but_level == 1){
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+            gpio_set_level(FIRE_LED, 1);
+            ESP_LOGI(TAG,"Fire Button Pressed");
+            vTaskDelay(1500 / portTICK_PERIOD_MS);
+            gpio_set_level(FIRE_LED, 0);
+        }
+        else{
+            gpio_set_level(FIRE_LED, 0);
+        }
     }
 }
 
@@ -330,7 +346,7 @@ static void init_gpio(void){
 	f_conf.mode = GPIO_MODE_INPUT;
 	//enable pull-up mode
 	f_conf.pull_up_en = 1;
-    //interrupt on falling edge
+    //interrupt on rising edge
     f_conf.intr_type = GPIO_INTR_NEGEDGE;	
 	//configure input GPIO pins with the given settings
 	gpio_config(&f_conf);
@@ -377,8 +393,11 @@ void app_main(void)
     init_espnow_master();
 	ESP_LOGD(TAG, "remote esp initialization complete");
 
-	button_queue = xQueueCreate(10, sizeof(button_event_t));
+	button_queue = xQueueCreate(20, sizeof(button_event_t));
 	xTaskCreate(button_task, "button_task", 2048, NULL, 5, NULL);
+
+    //Start task scheduler
+    //vTaskStartScheduler();
     
 	while(1){
 		send_espnow_data();
