@@ -31,6 +31,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/timers.h"
+#include "freertos/event_groups.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -43,7 +44,6 @@
 
 #include "espnow_custom.h"
 #include "sdkconfig.h"
-
 #include "espnow_basic_config.h"
 
 //#define OUT_PIN_SEL ((1ULL<<RF_PIN) | (1ULL<<RB_PIN) | (1ULL<<LF_PIN) | (1ULL<<LB_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FIRE_PIN) | (1ULL<<FW_PIN) | (1ULL<<IR_EMIT))
@@ -53,28 +53,20 @@ static const char *TAG = "tank";
 
 //Initialize target tracking sensors and emitters
 /*static void target_tracking_init(){
-
-	//create target tracking task
-	xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
-
 }
 
 //Monitor target tracking sensors and interpret data to determine target direction
 int target_tracking_task(void) {
 	int target_direction;
-
 	return target_direction;
 }
 
 //Initialize turret rotation servo motor
 static void turret_rotation_init(){
-
-	xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
 }
 
 //Rotate turret according to target tracking sensor data
 void turret_rotation_task (int target_direction){
-
 }*/
 
 void firing_task(void *pvParameter) {
@@ -103,19 +95,16 @@ void firing_task(void *pvParameter) {
         /*while (gpio_get_level(FIRE_SERVO_PIN) == 1) {
             vTaskDelay(10 / portTICK_PERIOD_MS);
         }*/
-
 		if(gpio_get_level(FIRE_SERVO_PIN) == 0){
 			vTaskDelay(10 / portTICK_PERIOD_MS);
 			// Rotate the servo forward (180 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-
 			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 
 			// Rotate the servo back to the starting position (0 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-
 			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 		}
     }
@@ -124,28 +113,32 @@ void firing_task(void *pvParameter) {
 void app_main(void)
 {
     //zero-initialize the config structure.
-    gpio_config_t io_conf = {};
+    gpio_config_t o_conf = {};
     //disable interrupt
-    io_conf.intr_type = GPIO_INTR_DISABLE;
+    o_conf.intr_type = GPIO_INTR_DISABLE;
     //set as output mode
-    io_conf.mode = GPIO_MODE_OUTPUT;
+    o_conf.mode = GPIO_MODE_OUTPUT;
     //bit mask of the pins that you want to set
-    io_conf.pin_bit_mask = OUT_PIN_SEL;
+    o_conf.pin_bit_mask = OUT_PIN_SEL;
     //disable pull-down mode
-    io_conf.pull_down_en = 0;
+    o_conf.pull_down_en = 1;
     //disable pull-up mode
-    io_conf.pull_up_en = 0;
+    o_conf.pull_up_en = 0;
     //configure output GPIO pins with the given settings
-    gpio_config(&io_conf);
+    gpio_config(&o_conf);
 
 	//configure input GPIO pins (IR Sensors)
 	/*gpio_reset_pin(IN_PIN_SEL);
 	gpio_set_pull_mode(IN_PIN_SEL,GPIO_PULLUP_ONLY);
 	gpio_set_direction(IN_PIN_SEL,GPIO_MODE_INPUT);*/
 
+	// for some reason just having this makes it faster
+	//!note I would prefer not to have it
+    s_evt_group = xEventGroupCreate();
+    assert(s_evt_group);
+
 	//init espnow
     init_espnow_slave();
-
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//Initialize test LEDs to off (1 is off for RGB LEDs)
@@ -164,16 +157,18 @@ void app_main(void)
 	//target_tracking_init();
 	//turret_rotation_init();
 
-	xTaskCreate(&firing_task, "firing_task", 2048, NULL, 5, NULL);
+	xTaskCreate(firing_task, "firing_task", 2048, NULL, 5, NULL);
+	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
+	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
 
 	ESP_LOGI(TAG, "Before Tank main loop");
 	while(1){
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		//vTaskDelay(750 / portTICK_PERIOD_MS);
 		//gpio_set_level(RF_PIN, 0);
 		//gpio_set_level(RB_PIN, 0);
 		//gpio_set_level(LF_PIN, 0);
 		//gpio_set_level(LB_PIN, 0);
 
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		vTaskDelay(750 / portTICK_PERIOD_MS);
 	}
 }

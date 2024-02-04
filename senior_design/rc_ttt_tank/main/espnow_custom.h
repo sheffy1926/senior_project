@@ -8,6 +8,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/event_groups.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -19,8 +20,15 @@
 #include "driver/gpio.h"
 
 #include "sdkconfig.h"
-
 #include "espnow_basic_config.h"
+
+static EventGroupHandle_t s_evt_group;
+
+typedef struct {
+    uint8_t sender_mac_addr[ESP_NOW_ETH_ALEN];
+    my_data_t data;
+    int len;
+} recv_packet_t;
 
 #define MY_ESPNOW_WIFI_MODE WIFI_MODE_STA
 #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
@@ -58,7 +66,16 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len);
 * Param:
 * Return:
 **************************************************/
-esp_err_t send_espnow_data(my_data_t data);
+esp_err_t send_espnow_data(void);
+
+/**************************************************
+* Title:	packet_sent_cb
+* Summary:	function that send the status of the espnow message 
+            if it was a success or a failure
+* Param:
+* Return:
+**************************************************/
+void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 /**************************************************
 * Title: init_espnow_slave

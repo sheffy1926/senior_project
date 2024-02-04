@@ -3,11 +3,6 @@
 //extern static const char *TAG;
 static const char *TAG = "tank_espnow_custom";
 
-typedef struct {
-    uint8_t sender_mac_addr[ESP_NOW_ETH_ALEN];
-    my_data_t data;
-} recv_packet_t;
-
 /**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are received
@@ -17,8 +12,7 @@ typedef struct {
 * Param:
 * Return:
 **************************************************/
-void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
-{
+void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
     if(len != sizeof(my_data_t))
     {
         ESP_LOGE(TAG, "Unexpected data length: %d != %u", len, sizeof(my_data_t));
@@ -54,9 +48,9 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
         gpio_set_level(L_LED_B, packet->lf);
 
         //Left Back turn LED to Red
-        gpio_set_level(R_LED_R, packet->lb);
-		gpio_set_level(R_LED_G, OFF);
-		gpio_set_level(R_LED_B, OFF);
+        gpio_set_level(L_LED_R, packet->lb);
+		gpio_set_level(L_LED_G, OFF);
+		gpio_set_level(L_LED_B, OFF);
 
         ESP_LOGI(TAG, "Remote Driving Data Received!");
     }
@@ -75,9 +69,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
 * Param:
 * Return:
 **************************************************/
-esp_err_t send_espnow_data(my_data_t data)
-{
+esp_err_t send_espnow_data(void){
+
     const uint8_t destination_mac[] = REMOTE_MAC;
+    static my_data_t data;
 
     //populate data
 	/*data.message_type = FIRE_COMMAND;
@@ -97,13 +92,29 @@ esp_err_t send_espnow_data(my_data_t data)
 }
 
 /**************************************************
+* Title:	packet_sent_cb
+* Summary:	function that send the status of the espnow message 
+            if it was a success or a failure
+* Param:
+* Return:
+**************************************************/
+void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    if (mac_addr == NULL) {
+        ESP_LOGE(TAG, "Send cb arg error");
+        return;
+    }
+    assert(status == ESP_NOW_SEND_SUCCESS || status == ESP_NOW_SEND_FAIL);
+    xEventGroupSetBits(s_evt_group, BIT(status));
+}
+
+/**************************************************
 * Title: init_espnow_slave
 * Summary: initializes the wireless messaging of the tank
 * Param:
 * Return:
 **************************************************/
-void init_espnow_slave(void)
-{
+void init_espnow_slave(void){
     const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -117,14 +128,19 @@ void init_espnow_slave(void)
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     ESP_ERROR_CHECK( esp_wifi_set_mode(MY_ESPNOW_WIFI_MODE) );
     ESP_ERROR_CHECK( esp_wifi_start() );
+    vTaskDelay(500 / portTICK_PERIOD_MS);
 #if MY_ESPNOW_ENABLE_LONG_RANGE
     ESP_ERROR_CHECK( esp_wifi_set_protocol(MY_ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
 #endif
     ESP_ERROR_CHECK( esp_now_init() );
-    ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb) ); //Gives a warning because it is an incompatiable type but it still builds 
+    // Define a receive function pointer using the typedef
+    esp_now_recv_cb_t recv_cb_ptr = &recv_cb;
+    ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb_ptr) );  
     ESP_LOGD(TAG,"Attempting to register recv_cb for tank");
-    //ESP_ERROR_CHECK( esp_now_register_send_cb(send_espnow_data) );
-    ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK) );
+
+    ESP_ERROR_CHECK( esp_now_register_send_cb(packet_sent_cb) );
+    ESP_LOGD(TAG,"Attempting to register send_espnow_data for tank");
+    ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK));
 
     const esp_now_peer_info_t broadcast_destination = {
         .peer_addr = REMOTE_MAC,
