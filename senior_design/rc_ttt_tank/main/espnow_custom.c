@@ -98,8 +98,7 @@ esp_err_t send_espnow_data(void){
 * Param:
 * Return:
 **************************************************/
-void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
-{
+void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status){
     if (mac_addr == NULL) {
         ESP_LOGE(TAG, "Send cb arg error");
         return;

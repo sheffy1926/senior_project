@@ -110,8 +110,7 @@ void firing_task(void *pvParameter) {
     }
 }
 
-void app_main(void)
-{
+void app_main(void){
     //zero-initialize the config structure.
     gpio_config_t o_conf = {};
     //disable interrupt

@@ -50,7 +50,7 @@ static EventGroupHandle_t s_evt_group;
 * Param:
 * Return:
 **************************************************/
-void init_gpio(void);
+static void init_gpio(void);
 
 /**************************************************
 * Title:	firing_buttons
@@ -75,7 +75,7 @@ void button_task(void *args);
 * Param:
 * Return:
 **************************************************/
-void IRAM_ATTR gpio_isr_handler(void* arg);
+//static void IRAM_ATTR gpio_isr_handler(void* arg);
 
 /**************************************************
 * Title:	init_espnow_master
@@ -83,7 +83,7 @@ void IRAM_ATTR gpio_isr_handler(void* arg);
 * Param:
 * Return:
 **************************************************/
-void init_espnow_master(void);
+static void init_espnow_master(void);
 
 /**************************************************
 * Title:	packet_sent_cb
@@ -92,7 +92,7 @@ void init_espnow_master(void);
 * Param:
 * Return:
 **************************************************/
-void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
+static void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 /**************************************************
     * Title: send_espnow_data

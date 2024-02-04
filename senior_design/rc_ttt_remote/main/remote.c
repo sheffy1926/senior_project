@@ -55,8 +55,7 @@ static const char *TAG = "remote";
 *			len -> len of message received
 * Return:	none
 **************************************************/
-void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
-{
+void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 	ESP_LOGI(TAG, "tank message received");
     
     if(len != sizeof(my_data_t))
@@ -84,8 +83,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
     * Param:
     * Return:
     **************************************************/
-esp_err_t send_espnow_data(void)
-{
+esp_err_t send_espnow_data(void){
     const uint8_t destination_mac[] = TANK_MAC;
 	static my_data_t data;
 
@@ -140,8 +138,7 @@ esp_err_t send_espnow_data(void)
 * Param:
 * Return:
 **************************************************/
-void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
-{
+static void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status){
     if (mac_addr == NULL) {
         ESP_LOGE(TAG, "Send cb arg error");
         return;
@@ -156,8 +153,7 @@ void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 * Param:
 * Return:
 **************************************************/
-void init_espnow_master(void)
-{
+static void init_espnow_master(void){
     const wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -200,8 +196,7 @@ void init_espnow_master(void)
 * Param:
 * Return:
 **************************************************/
-void IRAM_ATTR gpio_isr_handler(void* arg)
-{
+static void IRAM_ATTR gpio_isr_handler(void* arg){
 	int button_pin = (int)arg;
 	button_event_t button_event = {
 		.button_pin = button_pin,
@@ -290,7 +285,7 @@ void firing_buttons(int fire_but_level){
 * Param:
 * Return:
 **************************************************/
-void init_gpio(void){
+static void init_gpio(void){
     //zero-initialize the config structure.
 	gpio_config_t i_conf = {};
 	//disable interrupt
@@ -336,8 +331,7 @@ void init_gpio(void){
 	gpio_config(&o_conf);
 }
 
-void app_main(void)
-{
+void app_main(void){
 	// for some reason just having this makes it faster
 	//!note I would prefer not to have it
     s_evt_group = xEventGroupCreate();
