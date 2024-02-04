@@ -1,5 +1,27 @@
 #define CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY 1
 
+/****************************************************
+ * Tank DONE List:
+ * 	Update PINS to be the correct mode. LEDs as outputs (manually)
+ * 	Update ESP LOG Message to determine what LEDs are working correctly/receiving signal from espnow
+ * Tank TODO List:
+ * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
+ * 	2: Once test configuration works, pass PWM signal from remote to provide acceleration curve for the motors 
+ * 	3: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
+ * 	4: reconfigure firing input to activate firing servo motor and then turn its position to start each time (PWM Signal)
+ * 
+ * 	5: Research IR Sensors and Emitters
+ * 	6: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
+ * 	7: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
+ * 	8: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
+ * 	9: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
+ * 
+ * 	3D Design the Tank's Base, Shell, Turret Connection ,Barrel, Turret Base, Dart Magazine Holder, Firing Mechanism 
+ * 	Design Custom PCB for Tank 
+ * 	Buy more components to have all of the necessary parts to complete the tank except maybe the nerf gun, 
+ * 		transistors and the target tracking sensors/emitters, maybe buy more 3D filament 
+****************************************************/
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -23,28 +45,6 @@
 #include "sdkconfig.h"
 
 #include "espnow_basic_config.h"
-
-/****************************************************
- * Tank DONE List:
- * 	Update PINS to be the correct mode. LEDs as outputs (manually)
- * 	Update ESP LOG Message to determine what LEDs are working correctly/receiving signal from espnow
- * Tank TODO List:
- * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
- * 	2: Once test configuration works, pass PWM signal from remote to provide acceleration curve for the motors 
- * 	3: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
- * 	4: reconfigure firing input to activate firing servo motor and then turn its position to start each time (PWM Signal)
- * 
- * 	5: Research IR Sensors and Emitters
- * 	6: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
- * 	7: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
- * 	8: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	9: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
- * 
- * 	3D Design the Tank's Base, Shell, Turret Connection ,Barrel, Turret Base, Dart Magazine Holder, Firing Mechanism 
- * 	Design Custom PCB for Tank 
- * 	Buy more components to have all of the necessary parts to complete the tank except maybe the nerf gun, 
- * 		transistors and the target tracking sensors/emitters, maybe buy more 3D filament 
-****************************************************/
 
 //#define OUT_PIN_SEL ((1ULL<<RF_PIN) | (1ULL<<RB_PIN) | (1ULL<<LF_PIN) | (1ULL<<LB_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FIRE_PIN) | (1ULL<<FW_PIN) | (1ULL<<IR_EMIT))
 #define OUT_PIN_SEL ((1ULL<<R_LED_R) | (1ULL<<R_LED_G) | (1ULL<<R_LED_B) | (1ULL<<L_LED_R) | (1ULL<<L_LED_G) | (1ULL<<L_LED_B) | (1ULL<<FIRE_PIN) | (1ULL<<FW_PIN))
@@ -173,9 +173,7 @@ void app_main(void)
 		//gpio_set_level(RB_PIN, 0);
 		//gpio_set_level(LF_PIN, 0);
 		//gpio_set_level(LB_PIN, 0);
-		gpio_set_level(FIRE_SERVO_PIN, ON);
-		//ESP_LOGI(TAG, "FIRE_SERVO_PIN ON");
+
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		gpio_set_level(FIRE_SERVO_PIN, OFF);
 	}
 }

@@ -80,9 +80,9 @@ esp_err_t send_espnow_data(my_data_t data)
     const uint8_t destination_mac[] = REMOTE_MAC;
 
     //populate data
-	data.message_type = FIRE_COMMAND;
+	/*data.message_type = FIRE_COMMAND;
 	data.fw_active = !(gpio_get_level(FW_PIN));
-	data.turret_firing = !(gpio_get_level(FIRE_PIN));
+	data.turret_firing = !(gpio_get_level(FIRE_PIN));*/
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
