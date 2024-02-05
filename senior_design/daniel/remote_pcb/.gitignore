@@ -1,0 +1,10 @@
+remote_backups/
+pcb_remote-backups/
+library_fp/
+3D_model/
+*.bak
+*.kicad_sym
+fp-info-cache
+sym-lib-table
+*.txt
+*.png
