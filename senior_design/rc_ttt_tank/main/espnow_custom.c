@@ -33,24 +33,29 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 		gpio_set_level(LB_PIN, packet->lb);*/
 
         //Right Forward turn LED to White
-        gpio_set_level(R_LED_R, packet->rf);
-		gpio_set_level(R_LED_G, packet->rf);
-		gpio_set_level(R_LED_B, packet->rf);
-
+        if (packet->rf == 0){
+            gpio_set_level(R_LED_R, ON);
+            gpio_set_level(R_LED_G, ON);
+            gpio_set_level(R_LED_B, ON);
+        }
         //Right Back turn LED to Red
-        gpio_set_level(R_LED_R, packet->rb);
-		gpio_set_level(R_LED_G, OFF);
-		gpio_set_level(R_LED_B, OFF);
-
+        if (packet->rb == 0){
+            gpio_set_level(R_LED_R, ON);
+            gpio_set_level(R_LED_G, OFF);
+            gpio_set_level(R_LED_B, OFF);
+        }
         //Left Forward turn LED to White
-		gpio_set_level(L_LED_R, packet->lf);
-        gpio_set_level(L_LED_G, packet->lf);
-        gpio_set_level(L_LED_B, packet->lf);
-
+        if (packet->lf == 0){
+            gpio_set_level(L_LED_R, ON);
+            gpio_set_level(L_LED_G, ON);
+            gpio_set_level(L_LED_B, ON);
+        }
         //Left Back turn LED to Red
-        gpio_set_level(L_LED_R, packet->lb);
-		gpio_set_level(L_LED_G, OFF);
-		gpio_set_level(L_LED_B, OFF);
+        if (packet->lb == 0){
+            gpio_set_level(L_LED_R, ON);
+            gpio_set_level(L_LED_G, OFF);
+            gpio_set_level(L_LED_B, OFF);
+        }
 
         ESP_LOGI(TAG, "Remote Driving Data Received!");
     }

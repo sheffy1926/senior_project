@@ -230,13 +230,15 @@ void button_task(void *args) {
                 
                 if(button_event.button_pin == FIRE_BUT){
                     fire_but_level = 1;
-                    vTaskDelay(50 / portTICK_PERIOD_MS);
                     firing_buttons(fire_but_level);
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                    fire_but_level = 0;
                 }
                 else if (button_event.button_pin == FW_BUT){
                     fire_but_level = 2;
-                    vTaskDelay(50 / portTICK_PERIOD_MS);
                     firing_buttons(fire_but_level);
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
+                    fire_but_level = 0;
                 }
                 fire_but_level = 0;
                 firing_buttons(fire_but_level);
