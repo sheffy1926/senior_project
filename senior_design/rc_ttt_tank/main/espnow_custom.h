@@ -25,7 +25,7 @@
 static EventGroupHandle_t s_evt_group;
 
 typedef struct {
-    uint8_t sender_mac_addr[ESP_NOW_ETH_ALEN];
+    esp_now_recv_info_t sender_mac_addr[ESP_NOW_ETH_ALEN];
     my_data_t data;
     int len;
 } recv_packet_t;
