@@ -40,8 +40,8 @@
 #define LB_BUT 4
 #define FIRE_BUT 14
 #define FW_BUT 5
-#define FIRE_LED 18
-#define FW_LED 25
+#define FIRE_LED 25
+#define FW_LED 18
 
 //Firing Servo variables
 #define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0

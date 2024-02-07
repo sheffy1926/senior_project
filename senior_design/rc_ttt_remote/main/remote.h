@@ -75,7 +75,7 @@ void button_task(void *args);
 * Param:
 * Return:
 **************************************************/
-//static void IRAM_ATTR gpio_isr_handler(void* arg);
+static void IRAM_ATTR gpio_isr_handler(void* arg);
 
 /**************************************************
 * Title:	init_espnow_master

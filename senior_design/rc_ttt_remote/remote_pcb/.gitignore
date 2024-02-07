@@ -6,3 +6,7 @@ library_fp/
 fp-info-cache
 sym-lib-table
 *.txt
+*.gbr
+*.gbrjob
+*.drl
+fp-lib-table
