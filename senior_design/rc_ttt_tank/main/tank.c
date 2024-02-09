@@ -157,8 +157,8 @@ void app_main(void){
 	//turret_rotation_init();
 
 	xTaskCreate(firing_task, "firing_task", 2048, NULL, 5, NULL);
-	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
-	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, tskIDLE_PRIORITY, NULL);
+	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 2, NULL);
+	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, 1, NULL);
 
 	ESP_LOGI(TAG, "Before Tank main loop");
 	while(1){

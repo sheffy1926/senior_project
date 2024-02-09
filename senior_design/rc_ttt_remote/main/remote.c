@@ -102,23 +102,17 @@ esp_err_t send_espnow_data(void){
 	data.activate_fw = !(gpio_get_level(FW_BUT));
     
     if((gpio_get_level(RF_BUT)) == 0){	
-        ESP_LOGI(TAG, "RF Button Press");
-	} 
+        ESP_LOGI(TAG, "RF Button Press");} 
     if((gpio_get_level(RB_BUT)) == 0){
-		ESP_LOGI(TAG, "RB Button Press");
-	}
+		ESP_LOGI(TAG, "RB Button Press");}
     if((gpio_get_level(LF_BUT)) == 0){
-		ESP_LOGI(TAG, "LF Button Press");
-	}
+		ESP_LOGI(TAG, "LF Button Press");}
     if((gpio_get_level(LB_BUT)) == 0){
-		ESP_LOGI(TAG, "LB Button Press");
-	}
+		ESP_LOGI(TAG, "LB Button Press");}
     if((gpio_get_level(FIRE_BUT)) == 0){
-		ESP_LOGI(TAG, "FIRE Button Press");
-	}
+		ESP_LOGI(TAG, "FIRE Button Press");}
     if((gpio_get_level(FW_BUT)) == 0){
-		ESP_LOGI(TAG, "FW Button Press");
-	}
+		ESP_LOGI(TAG, "FW Button Press");}
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
