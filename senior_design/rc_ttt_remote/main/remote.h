@@ -16,6 +16,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_now.h"
+#include "esp_efuse.h"
 #include "esp_sleep.h"
 #include "esp_random.h"
 #include "driver/gpio.h"

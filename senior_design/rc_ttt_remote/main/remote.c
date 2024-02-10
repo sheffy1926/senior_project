@@ -32,6 +32,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_now.h"
+#include "esp_efuse.h"
 #include "esp_sleep.h"
 #include "esp_random.h"
 #include "driver/gpio.h"
@@ -86,6 +87,15 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 esp_err_t send_espnow_data(void){
     const uint8_t destination_mac[] = TANK_MAC;
 	static my_data_t data;
+
+    // Convert MAC address to string
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+             destination_mac[0], destination_mac[1], destination_mac[2],
+             destination_mac[3], destination_mac[4], destination_mac[5]);
+
+    // Log the MAC address we are sending data to
+    ESP_LOGI(TAG, "Sending data to MAC: %s", mac_str);
 
 	//populate data
 	data.message_type = TANK_COMMAND;

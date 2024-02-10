@@ -160,7 +160,6 @@ void app_main(void){
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 2, NULL);
 	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, 1, NULL);
 
-	ESP_LOGI(TAG, "Before Tank main loop");
 	while(1){
 		//vTaskDelay(750 / portTICK_PERIOD_MS);
 		//gpio_set_level(RF_PIN, 0);

@@ -19,6 +19,15 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         return;
     }
 
+    // Convert MAC address to string
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+             mac_addr[0], mac_addr[1], mac_addr[2],
+             mac_addr[3], mac_addr[4], mac_addr[5]);
+
+    // Log the MAC address we are sending data to
+    ESP_LOGI(TAG, "Receiving data from MAC: %s", mac_str);
+
 	//move the tank, activate flywheels or fire turret accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 							  //because we checked the length above
