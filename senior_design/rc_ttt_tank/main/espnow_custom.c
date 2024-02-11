@@ -4,6 +4,50 @@
 static const char *TAG = "tank_espnow_custom";
 
 static uint32_t fw_state = 0;
+static uint32_t fire_servo = 0;
+
+void firing_task(void *pvParameter) {
+    esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
+    gpio_set_direction(FIRE_SERVO_PIN, GPIO_MODE_OUTPUT);
+
+    ledc_timer_config_t timer_conf;
+    timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf.timer_num = SERVO_PWM_TIMER;
+	timer_conf.duty_resolution = DUTY_RESOLUTION;
+    timer_conf.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf);
+
+    ledc_channel_config_t ledc_conf;
+    ledc_conf.gpio_num = FIRE_SERVO_PIN;
+    ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf.channel = SERVO_PWM_CHANNEL;
+    ledc_conf.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf.timer_sel = SERVO_PWM_TIMER;
+    ledc_conf.duty = 4;
+    ledc_conf.hpoint = 0;
+    ledc_channel_config(&ledc_conf);
+
+    while (1) {
+        // Wait until the GPIO pin controlling the servo motor is pulled low
+		if(fire_servo == 1){
+			ESP_LOGI(TAG, "Firing Servo Activated");
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+            for(int i = 0; i < 2; i++){
+                // Rotate the servo forward (180 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
+
+                // Rotate the servo back to the starting position (0 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+            }
+            gpio_set_level(FIRE_PIN, 0);
+            fire_servo = 0;
+		}
+    }
+}
 
 /**************************************************
 * Title:	recv_cb
@@ -33,10 +77,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 
     ESP_LOGI(TAG, "Receiving Remote data from MAC: %s", mac_str);*/
     ESP_LOGI(TAG, "message_type: %d", packet->message_type);
-    ESP_LOGI(TAG, "rf: %d", packet->rf);
-    ESP_LOGI(TAG, "rb: %d", packet->rb);
-    ESP_LOGI(TAG, "lf: %d", packet->lf);
-    ESP_LOGI(TAG, "lb: %d", packet->lb);
+    //ESP_LOGI(TAG, "rf: %d", packet->rf);
+    //ESP_LOGI(TAG, "rb: %d", packet->rb);
+    //ESP_LOGI(TAG, "lf: %d", packet->lf);
+    //ESP_LOGI(TAG, "lb: %d", packet->lb);
     ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
     ESP_LOGI(TAG, "activate_fw: %d", packet->activate_fw);
 
@@ -44,10 +88,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
 	} 
     else if(packet->message_type == TANK_COMMAND){
-		/*gpio_set_level(RF_PIN, packet->rf);
-		gpio_set_level(RB_PIN, packet->rb);
-		gpio_set_level(LF_PIN, packet->lf);
-		gpio_set_level(LB_PIN, packet->lb);*/
+		/*gpio_set_level(L_IN1_PIN, packet->rf);
+		gpio_set_level(L_IN2_PIN, packet->rb);
+		gpio_set_level(R_IN3_PIN, packet->lf);
+		gpio_set_level(R_IN4_PIN, packet->lb);*/
 
         //Right Forward turn LED to White
         if (packet->rf == 1){
@@ -93,12 +137,12 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
             gpio_set_level(L_LED_R, OFF);
         }
 
-        //Activate Firing Servo and LED
-        if(packet->fire_turret == 1){
-            gpio_set_level(FIRE_PIN, 1);
-            //gpio_set_level(FIRE_SERVO_PIN,1);
-            vTaskDelay(250 / portTICK_PERIOD_MS);
-            gpio_set_level(FIRE_PIN, 0);
+        //Activate Firing Servo and LED if Flywheels are active
+        if(fw_state == 1){
+            if(packet->fire_turret == 1){
+                gpio_set_level(FIRE_PIN, 1);
+                fire_servo = 1;
+            }
         }
 
         //Toggle FW LED

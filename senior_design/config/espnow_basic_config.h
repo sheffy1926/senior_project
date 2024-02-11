@@ -48,14 +48,14 @@
 #define SERVO_PWM_TIMER     LEDC_TIMER_0
 #define DUTY_RESOLUTION 	8
 #define PWM_FREQUENCY      	50 	// Hz
-#define DUTY_MIN          	10   // 5% duty cycle (0 degrees)
-#define DUTY_MAX          	30  // 10% duty cycle (180 degrees)
+#define DUTY_MIN          	8   // 5% duty cycle (0 degrees)
+#define DUTY_MAX          	32  // 10% duty cycle (180 degrees)
 
 #define ON 0
 #define OFF 1
 #define TRUE 1
 #define FALSE 0
-#define DEBOUNCE_DELAY_MS 50
+#define DEBOUNCE_DELAY_MS 30
 
 //message types
 #define TANK_COMMAND  	1
