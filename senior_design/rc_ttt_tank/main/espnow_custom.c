@@ -96,7 +96,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         //Activate Firing Servo and LED
         if(packet->fire_turret == 1){
             gpio_set_level(FIRE_PIN, 1);
-            gpio_set_level(FIRE_SERVO_PIN,1);
+            //gpio_set_level(FIRE_SERVO_PIN,1);
             vTaskDelay(250 / portTICK_PERIOD_MS);
             gpio_set_level(FIRE_PIN, 0);
         }

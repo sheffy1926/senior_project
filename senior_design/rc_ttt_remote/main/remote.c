@@ -58,13 +58,13 @@ static const char *TAG = "remote";
 **************************************************/
 void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 	// Convert MAC address to string
-    char mac_str[18];
+    /*char mac_str[18];
     snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
              mac_addr[0], mac_addr[1], mac_addr[2],
              mac_addr[3], mac_addr[4], mac_addr[5]);
 
     // Log the MAC address we are sending data to
-    ESP_LOGI(TAG, "Receive Tank data from MAC: %s", mac_str);
+    ESP_LOGI(TAG, "Receive Tank data from MAC: %s", mac_str);*/
     
     if(len != sizeof(my_data_t))
     {
@@ -94,15 +94,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 esp_err_t send_espnow_data(void){
     const uint8_t destination_mac[] = TANK_MAC;
 	static my_data_t data;
-
-    // Convert MAC address to string
-    /*char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-             destination_mac[0], destination_mac[1], destination_mac[2],
-             destination_mac[3], destination_mac[4], destination_mac[5]);
-
-    // Log the MAC address we are sending data to
-    ESP_LOGI(TAG, "Sending data to MAC: %s", mac_str);*/
 
 	//populate data
 	data.message_type = TANK_COMMAND;

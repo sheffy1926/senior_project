@@ -90,9 +90,13 @@ void firing_task(void *pvParameter) {
     ledc_conf.hpoint = 0;
     ledc_channel_config(&ledc_conf);
 
+	ESP_LOGI(TAG, "Starting Firing Task");
+
     while (1) {
         // Wait until the GPIO pin controlling the servo motor is pulled low
 		if(gpio_get_level(FIRE_SERVO_PIN) == 1){
+			ESP_LOGI(TAG, "Firing Task Activated");
+
 			vTaskDelay(50 / portTICK_PERIOD_MS);
 			gpio_set_level(FIRE_SERVO_PIN,0);
 			// Rotate the servo forward (180 degrees)
@@ -159,7 +163,7 @@ void app_main(void){
 	//target_tracking_init();
 	//turret_rotation_init();
 
-	xTaskCreate(firing_task, "firing_task", 256, NULL, 3, NULL);
+	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 2, NULL);
 	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, 1, NULL);
 
