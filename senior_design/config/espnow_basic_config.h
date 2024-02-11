@@ -26,7 +26,7 @@
 //#define TURRET_PIN 19
 #define FIRE_SERVO_PIN 19 
 #define FIRE_PIN 18
-#define FW_PIN 27
+#define FW_PIN 25
 /* #define IR_S_1 22
 #define IR_S_2 23
 #define IR_S_3 34
@@ -47,9 +47,9 @@
 #define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0
 #define SERVO_PWM_TIMER     LEDC_TIMER_0
 #define DUTY_RESOLUTION 	8
-#define PWM_FREQUENCY      	50 // Hz
-#define DUTY_MIN          	5    // 5% duty cycle (0 degrees)
-#define DUTY_MAX          	10   // 10% duty cycle (180 degrees)
+#define PWM_FREQUENCY      	50 	// Hz
+#define DUTY_MIN          	5   // 5% duty cycle (0 degrees)
+#define DUTY_MAX          	10  // 10% duty cycle (180 degrees)
 
 #define ON 0
 #define OFF 1
@@ -59,7 +59,7 @@
 
 //message types
 #define TANK_COMMAND  	1
-#define FIRE_COMMAND  	2
+//#define FIRE_COMMAND  	2
 
 // Define the structure of your data
 typedef struct __attribute__((packed)) {
@@ -67,16 +67,15 @@ typedef struct __attribute__((packed)) {
 	uint8_t message_type;
 
 	//commands to the tank
-	//use if message type is TANK_COMMAND
     bool rf;
     bool rb;
     bool lf;
     bool lb;
 	
 	//commands to fire the turret
-	//use if message type is FIRE_COMMAND
 	bool fire_turret;
 	bool activate_fw;
+	//turret status messages
 	bool turret_firing;
 	bool fw_active;	
 

@@ -85,4 +85,12 @@ void packet_sent_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 **************************************************/
 void init_espnow_slave(void);
 
+/**************************************************
+* Title: config_gpio_pins
+* Summary: set up gpio pins for the tank esp32
+* Param:
+* Return:
+**************************************************/
+void config_gpio_pins(void);
+
 #endif //ESP_NOW_CUSTOM_H

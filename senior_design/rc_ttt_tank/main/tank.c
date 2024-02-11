@@ -92,11 +92,9 @@ void firing_task(void *pvParameter) {
 
     while (1) {
         // Wait until the GPIO pin controlling the servo motor is pulled low
-        /*while (gpio_get_level(FIRE_SERVO_PIN) == 1) {
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-        }*/
-		if(gpio_get_level(FIRE_SERVO_PIN) == 0){
-			vTaskDelay(10 / portTICK_PERIOD_MS);
+		if(gpio_get_level(FIRE_SERVO_PIN) == 1){
+			vTaskDelay(50 / portTICK_PERIOD_MS);
+			gpio_set_level(FIRE_SERVO_PIN,0);
 			// Rotate the servo forward (180 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
@@ -110,8 +108,8 @@ void firing_task(void *pvParameter) {
     }
 }
 
-void app_main(void){
-    //zero-initialize the config structure.
+void config_gpio_pins(void){
+	//zero-initialize the config structure.
     gpio_config_t o_conf = {};
     //disable interrupt
     o_conf.intr_type = GPIO_INTR_DISABLE;
@@ -130,6 +128,11 @@ void app_main(void){
 	/*gpio_reset_pin(IN_PIN_SEL);
 	gpio_set_pull_mode(IN_PIN_SEL,GPIO_PULLUP_ONLY);
 	gpio_set_direction(IN_PIN_SEL,GPIO_MODE_INPUT);*/
+}
+
+void app_main(void){
+	//Set up gpio pins to correct modes
+    config_gpio_pins();
 
 	// for some reason just having this makes it faster
 	//!note I would prefer not to have it
@@ -156,12 +159,11 @@ void app_main(void){
 	//target_tracking_init();
 	//turret_rotation_init();
 
-	xTaskCreate(firing_task, "firing_task", 2048, NULL, 5, NULL);
+	xTaskCreate(firing_task, "firing_task", 256, NULL, 3, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 2, NULL);
 	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, 1, NULL);
 
 	while(1){
-		//vTaskDelay(750 / portTICK_PERIOD_MS);
 		//gpio_set_level(RF_PIN, 0);
 		//gpio_set_level(RB_PIN, 0);
 		//gpio_set_level(LF_PIN, 0);
