@@ -96,18 +96,17 @@ void firing_task(void *pvParameter) {
         // Wait until the GPIO pin controlling the servo motor is pulled low
 		if(gpio_get_level(FIRE_SERVO_PIN) == 1){
 			ESP_LOGI(TAG, "Firing Task Activated");
+			vTaskDelay(10 / portTICK_PERIOD_MS);
 
-			vTaskDelay(50 / portTICK_PERIOD_MS);
-			gpio_set_level(FIRE_SERVO_PIN,0);
 			// Rotate the servo forward (180 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
+			vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 
 			// Rotate the servo back to the starting position (0 degrees)
 			ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
 			ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-			vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
+			vTaskDelay(100 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 		}
     }
 }
@@ -163,7 +162,7 @@ void app_main(void){
 	//target_tracking_init();
 	//turret_rotation_init();
 
-	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
+	xTaskCreate(firing_task, "firing_task", 4096, NULL, 3, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 2, NULL);
 	//xTaskCreate(turret_rotation_task, "turret_rotation_task", 2048, NULL, 1, NULL);
 

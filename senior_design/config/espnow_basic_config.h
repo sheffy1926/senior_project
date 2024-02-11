@@ -19,11 +19,11 @@
 
 //Tank Pins for Motors, Firing Mechanism, Flywheels, 
 //PWM Signals, IR Sensors & Emitters
-//#define RF_PIN 12
-//#define RB_PIN 13
-//#define LF_PIN 2
-//#define LB_PIN 4 
-//#define TURRET_PIN 19
+//#define L_IN1_PIN 12
+//#define L_IN2_PIN 13
+//#define R_IN3_PIN 2
+//#define R_IN4_PIN 4 
+//#define TURRET_PIN 18
 #define FIRE_SERVO_PIN 19 
 #define FIRE_PIN 18
 #define FW_PIN 25
@@ -48,8 +48,8 @@
 #define SERVO_PWM_TIMER     LEDC_TIMER_0
 #define DUTY_RESOLUTION 	8
 #define PWM_FREQUENCY      	50 	// Hz
-#define DUTY_MIN          	5   // 5% duty cycle (0 degrees)
-#define DUTY_MAX          	10  // 10% duty cycle (180 degrees)
+#define DUTY_MIN          	10   // 5% duty cycle (0 degrees)
+#define DUTY_MAX          	30  // 10% duty cycle (180 degrees)
 
 #define ON 0
 #define OFF 1
