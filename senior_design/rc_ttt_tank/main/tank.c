@@ -46,8 +46,8 @@
 #include "sdkconfig.h"
 #include "espnow_basic_config.h"
 
-//#define OUT_PIN_SEL ((1ULL<<RF_PIN) | (1ULL<<RB_PIN) | (1ULL<<LF_PIN) | (1ULL<<LB_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FIRE_PIN) | (1ULL<<FW_PIN) | (1ULL<<IR_EMIT))
-#define OUT_PIN_SEL ((1ULL<<R_LED_R) | (1ULL<<R_LED_G) | (1ULL<<R_LED_B) | (1ULL<<L_LED_R) | (1ULL<<L_LED_G) | (1ULL<<L_LED_B) | (1ULL<<FIRE_PIN) | (1ULL<<FW_PIN))
+//| (1ULL<<IR_EMIT)
+#define OUT_PIN_SEL ((1ULL<<RB_IN1_PIN) | (1ULL<<RF_IN2_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_SERVO_PIN))
 //#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) )
 static const char *TAG = "tank";
 
@@ -71,13 +71,13 @@ static const char *TAG = "tank";
 * Param:
 * Return:
 **************************************************/
-/*void turret_task(void *pvParameter){
+void turret_task(void *pvParameter){
 	esp_rom_gpio_pad_select_gpio(TURRET_PIN);
     gpio_set_direction(TURRET_PIN, GPIO_MODE_OUTPUT);
 
     ledc_timer_config_t timer_conf;
     timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf.timer_num = SERVO_PWM_TIMER;
+    timer_conf.timer_num = TURRET_PWM_TIMER;
 	timer_conf.duty_resolution = DUTY_RESOLUTION;
     timer_conf.freq_hz = PWM_FREQUENCY;
     ledc_timer_config(&timer_conf);
@@ -85,17 +85,38 @@ static const char *TAG = "tank";
     ledc_channel_config_t ledc_conf;
     ledc_conf.gpio_num = TURRET_PIN;
     ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf.channel = SERVO_PWM_CHANNEL;
+    ledc_conf.channel = TURRET_PWM_CHANNEL;
     ledc_conf.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf.timer_sel = SERVO_PWM_TIMER;
+    ledc_conf.timer_sel = TURRET_PWM_TIMER;
     ledc_conf.duty = 4;
     ledc_conf.hpoint = 0;
     ledc_channel_config(&ledc_conf);
 
-	while(1){
+	static uint32_t rotate_turret = 1;
 
-	}
-}*/
+	while (1) {
+		//Wait for a message to be received from firing_task for a fire button press
+		/*if(uxQueueMessagesWaiting(turret_queue) > 0){
+			if(xQueueReceive(turret_queue,rotate_turret,25)== pdTRUE){}
+		}*/
+        // Wait until the GPIO pin controlling the servo motor is pulled low
+		if(rotate_turret == 1){
+			ESP_LOGI(TAG, "Turret Servo Activated");
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+            for(int i = 0; i < 2; i++){
+                // Rotate the servo forward (270 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
+
+                // Rotate the servo back to the starting position (0 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MIN_TURRET);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+            }
+		}
+    }
+}
 
 /**************************************************
 * Title:	firing_task
@@ -139,12 +160,12 @@ void firing_task(void *pvParameter) {
 			vTaskDelay(10 / portTICK_PERIOD_MS);
             for(int i = 0; i < 2; i++){
                 // Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX);
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX_FIRE);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
                 vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
 
                 // Rotate the servo back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN);
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
@@ -247,10 +268,11 @@ void app_main(void){
 	r_motor_queue = xQueueCreate(4, sizeof(uint32_t));
 	l_motor_queue = xQueueCreate(4, sizeof(uint32_t));
 	firing_queue = xQueueCreate(1,sizeof(uint32_t));
+	turret_queue = xQueueCreate(8,sizeof(uint32_t));
 
 	xTaskCreate(firing_task, "firing_task", 4096, NULL, 3, NULL);
 	xTaskCreate(driving_task, "driving_task", 4096, NULL, 3, NULL);
-	//xTaskCreate(turret_task, "turret_task", 4096, NULL, 3, NULL);
+	xTaskCreate(turret_task, "turret_task", 4096, NULL, 3, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){

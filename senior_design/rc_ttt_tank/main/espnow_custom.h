@@ -28,6 +28,7 @@ static EventGroupHandle_t s_evt_group;
 QueueHandle_t r_motor_queue;
 QueueHandle_t l_motor_queue;
 QueueHandle_t firing_queue;
+QueueHandle_t turret_queue;
 
 typedef struct {
     esp_now_recv_info_t sender_mac_addr[ESP_NOW_ETH_ALEN];
@@ -54,7 +55,7 @@ typedef struct {
 * Param:
 * Return:
 **************************************************/
-//void turret_task(void *pvParameter);
+void turret_task(void *pvParameter);
 
 /**************************************************
 * Title:	firing_task

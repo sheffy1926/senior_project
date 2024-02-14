@@ -9,14 +9,6 @@
 //change this value to compile for different tank remote pairs
 #define TANK_REMOTE_PAIR LINK
 
-//Pin Layout for Test Configuration 
-/*#define R_LED_R 13
-#define R_LED_G 12
-#define R_LED_B 14
-#define L_LED_R 2
-#define L_LED_G 4
-#define L_LED_B 5*/
-
 //Tank Pins for Motors, Firing Mechanism, Flywheels, 
 //PWM Signals, IR Sensors & Emitters
 #define RB_IN1_PIN 5
@@ -42,13 +34,19 @@
 #define FIRE_LED 25
 #define FW_LED 18
 
-//Firing Servo variables
+//Firing Servo Variables
 #define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0
 #define SERVO_PWM_TIMER     LEDC_TIMER_0
 #define DUTY_RESOLUTION 	8
 #define PWM_FREQUENCY      	50 	// Hz
-#define DUTY_MIN          	8   // 5% duty cycle (0 degrees)
-#define DUTY_MAX          	32  // 10% duty cycle (180 degrees)
+#define DUTY_MIN_FIRE       8   // 5% duty cycle (0 degrees)
+#define DUTY_MAX_FIRE       32  // 10% duty cycle (180 degrees)
+
+//Turret Servo Variables
+#define TURRET_PWM_CHANNEL   LEDC_CHANNEL_1
+#define TURRET_PWM_TIMER     LEDC_TIMER_1
+#define DUTY_MIN_TURRET     8   // 5% duty cycle (0 degrees)
+#define DUTY_MAX_TURRET     45  // 10% duty cycle (270 degrees?)
 
 #define ON 0
 #define OFF 1
