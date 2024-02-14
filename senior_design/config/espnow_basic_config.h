@@ -10,22 +10,21 @@
 #define TANK_REMOTE_PAIR LINK
 
 //Pin Layout for Test Configuration 
-#define R_LED_R 13
+/*#define R_LED_R 13
 #define R_LED_G 12
 #define R_LED_B 14
 #define L_LED_R 2
 #define L_LED_G 4
-#define L_LED_B 5
+#define L_LED_B 5*/
 
 //Tank Pins for Motors, Firing Mechanism, Flywheels, 
 //PWM Signals, IR Sensors & Emitters
-//#define L_IN1_PIN 12
-//#define L_IN2_PIN 13
-//#define R_IN3_PIN 2
-//#define R_IN4_PIN 4 
-//#define TURRET_PIN 18
-#define FIRE_SERVO_PIN 19 
-#define FIRE_PIN 18
+#define RB_IN1_PIN 5
+#define RF_IN2_PIN 18
+#define LF_IN3_PIN 19
+#define LB_IN4_PIN 21 
+#define TURRET_PIN 12
+#define FIRE_SERVO_PIN 15 
 #define FW_PIN 25
 /* #define IR_S_1 22
 #define IR_S_2 23

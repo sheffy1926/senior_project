@@ -24,6 +24,11 @@
 
 static EventGroupHandle_t s_evt_group;
 
+//Global Queue Handlers 
+QueueHandle_t r_motor_queue;
+QueueHandle_t l_motor_queue;
+QueueHandle_t firing_queue;
+
 typedef struct {
     esp_now_recv_info_t sender_mac_addr[ESP_NOW_ETH_ALEN];
     my_data_t data;
@@ -34,20 +39,42 @@ typedef struct {
 #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
 
 //Prototypes
-/*static void target_tracking_init(void); 
-int target_tracking_task(void);
-static void turret_rotation_init(void);
-void turret_rotation_task (int target_direction);*/
+/**************************************************
+* Title:	turret_task
+* Summary:	Controls IR Sensors and Emitters and send data to turret 
+            task based if there is an IR signal detected.
+* Param:
+* Return:
+**************************************************/
+//void target_tracking_task(void *pvParameter);
+
+/**************************************************
+* Title:	turret_task
+* Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
+* Param:
+* Return:
+**************************************************/
+//void turret_task(void *pvParameter);
 
 /**************************************************
 * Title:	firing_task
-* Summary:	rotates the firing mechanism servo motor forward
-			180 degrees then rotates it back to the starting position
-			using a PWM signal when the firing pin is pulled low
+* Summary:	function activates the firing mechanism micro servo motor
+            Which rotates forward (180 Deg) then back (0 Deg) and pushes 
+            out the nerf dart using the 3D printed rack and pinion
 * Param:
 * Return:
 **************************************************/
 void firing_task(void *pvParameter);
+
+/**************************************************
+* Title:	driving_task
+* Summary:	function activates the driving motors of the tank using the h bridge,
+            it drives the motors clockwise or counterclock wise while a driving 
+            button is being press on the remote
+* Param:
+* Return:
+**************************************************/
+void driving_task(void *pvParameter);
 
 /**************************************************
 * Title:	recv_cb
