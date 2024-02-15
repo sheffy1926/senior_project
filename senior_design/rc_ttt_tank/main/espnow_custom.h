@@ -41,7 +41,7 @@ typedef struct {
 
 //Prototypes
 /**************************************************
-* Title:	turret_task
+* Title:	target_tracking_task
 * Summary:	Controls IR Sensors and Emitters and send data to turret 
             task based if there is an IR signal detected.
 * Param:
@@ -76,6 +76,14 @@ void firing_task(void *pvParameter);
 * Return:
 **************************************************/
 void driving_task(void *pvParameter);
+
+/**************************************************
+* Title:	driving_pwm_init
+* Summary:	initialize pwm channels and signals for driving DC motors 
+* Param:
+* Return:
+**************************************************/
+void driving_pwm_init(void)
 
 /**************************************************
 * Title:	recv_cb

@@ -52,7 +52,7 @@
 static const char *TAG = "tank";
 
 /**************************************************
-* Title:	turret_task
+* Title:	target_tracking_task
 * Summary:	Controls IR Sensors and emitters and send data to turret 
             task based if there is an IR signal detected.
 * Param:
@@ -73,24 +73,23 @@ static const char *TAG = "tank";
 **************************************************/
 void turret_task(void *pvParameter){
 	esp_rom_gpio_pad_select_gpio(TURRET_PIN);
-    gpio_set_direction(TURRET_PIN, GPIO_MODE_OUTPUT);
 
-    ledc_timer_config_t timer_conf;
-    timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf.timer_num = TURRET_PWM_TIMER;
-	timer_conf.duty_resolution = DUTY_RESOLUTION;
-    timer_conf.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf);
+    ledc_timer_config_t timer_conf1;
+    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf1.timer_num = TURRET_PWM_TIMER;
+	timer_conf1.duty_resolution = DUTY_RESOLUTION;
+    timer_conf1.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf1);
 
-    ledc_channel_config_t ledc_conf;
-    ledc_conf.gpio_num = TURRET_PIN;
-    ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf.channel = TURRET_PWM_CHANNEL;
-    ledc_conf.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf.duty = 4;
-    ledc_conf.hpoint = 0;
-    ledc_channel_config(&ledc_conf);
+    ledc_channel_config_t ledc_conf1;
+    ledc_conf1.gpio_num = TURRET_PIN;
+    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf1.channel = TURRET_PWM_CHANNEL;
+    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
+    ledc_conf1.duty = 4;
+    ledc_conf1.hpoint = 0;
+    ledc_channel_config(&ledc_conf1);
 
 	static uint32_t rotate_turret = 1;
 
@@ -128,24 +127,23 @@ void turret_task(void *pvParameter){
 **************************************************/
 void firing_task(void *pvParameter) {
     esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
-    gpio_set_direction(FIRE_SERVO_PIN, GPIO_MODE_OUTPUT);
 
-    ledc_timer_config_t timer_conf;
-    timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf.timer_num = SERVO_PWM_TIMER;
-	timer_conf.duty_resolution = DUTY_RESOLUTION;
-    timer_conf.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf);
+    ledc_timer_config_t timer_conf0;
+    timer_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf0.timer_num = SERVO_PWM_TIMER;
+	timer_conf0.duty_resolution = DUTY_RESOLUTION;
+    timer_conf0.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf0);
 
-    ledc_channel_config_t ledc_conf;
-    ledc_conf.gpio_num = FIRE_SERVO_PIN;
-    ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf.channel = SERVO_PWM_CHANNEL;
-    ledc_conf.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf.timer_sel = SERVO_PWM_TIMER;
-    ledc_conf.duty = 4;
-    ledc_conf.hpoint = 0;
-    ledc_channel_config(&ledc_conf);
+    ledc_channel_config_t ledc_conf0;
+    ledc_conf0.gpio_num = FIRE_SERVO_PIN;
+    ledc_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf0.channel = SERVO_PWM_CHANNEL;
+    ledc_conf0.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf0.timer_sel = SERVO_PWM_TIMER;
+    ledc_conf0.duty = 4;
+    ledc_conf0.hpoint = 0;
+    ledc_channel_config(&ledc_conf0);
 
 	static uint32_t fire_servo = 0;
 
@@ -198,32 +196,120 @@ void driving_task(void *pvParameter) {
 
 		//Right Forward Motion
 		if (right_drive = 1){
-			gpio_set_level(RF_IN2_PIN, 1);
+			ESP_LOGI(TAG, "Right Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
 		}
 		//Right Backwards Motion
 		else if (right_drive == 2){
-			gpio_set_level(RB_IN1_PIN, 1);
+			ESP_LOGI(TAG, "Right Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
 		}
 		//Right Motor Off
 		else if (right_drive == 0){
-			gpio_set_level(RF_IN2_PIN, 0);
-			gpio_set_level(RB_IN1_PIN, 0);
+			ESP_LOGI(TAG, "Right Motor Off");
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
 		}
 
 		//Left Forwards Motion
 		if (left_drive == 1){
-			gpio_set_level(LF_IN3_PIN, 1);
+			ESP_LOGI(TAG, "Left Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
 		}
 		//Left Backwards Motion 
 		else if (left_drive == 2){
-			gpio_set_level(LB_IN4_PIN, 1);
+			ESP_LOGI(TAG, "Left Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
 		}
 		//Left Motor Off
 		else if (left_drive == 0){
-			gpio_set_level(LF_IN3_PIN, 0);
-			gpio_set_level(LB_IN4_PIN, 0);
+			ESP_LOGI(TAG, "Left Motor Off");
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
 		}
+		vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust control frequency
 	}
+}
+
+void driving_pwm_init(void){
+	// Configure PWM timer
+    ledc_timer_config_t timer_conf2 = {
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .duty_resolution = PWM_RESOLUTION,
+        .timer_num = DRIVING_PWM_TIMER,
+        .freq_hz = PWM_FREQ,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    ledc_timer_config(&timer_conf2);
+
+    // Configure PWM channels for right motor
+    ledc_channel_config_t rb_in1_conf = {
+        .gpio_num = RB_IN1_PIN,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .channel = RB_PWM_CHANNEL,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = DRIVING_PWM_TIMER,
+        .duty = 0,
+        .hpoint = 0,
+    };
+    ledc_channel_config(&rb_in1_conf);
+
+    ledc_channel_config_t rf_in2_conf = {
+        .gpio_num = RF_IN2_PIN,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .channel = RF_PWM_CHANNEL,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = DRIVING_PWM_TIMER,
+        .duty = 0,
+        .hpoint = 0,
+    };
+    ledc_channel_config(&rf_in2_conf);
+
+    // Configure PWM channels for left motor
+    ledc_channel_config_t lf_in3_conf = {
+        .gpio_num = LF_IN3_PIN,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .channel = LF_PWM_CHANNEL,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = DRIVING_PWM_TIMER,
+        .duty = 0,
+        .hpoint = 0,
+    };
+    ledc_channel_config(&lf_in3_conf);
+
+    ledc_channel_config_t lb_in4_conf = {
+        .gpio_num = LB_IN4_PIN,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .channel = LB_PWM_CHANNEL,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = DRIVING_PWM_TIMER,
+        .duty = 0,
+        .hpoint = 0,
+    };
+    ledc_channel_config(&lb_in4_conf);
+
+    // Start the PWM generator
+    ledc_fade_func_install(0);
 }
 
 void config_gpio_pins(void){
@@ -242,6 +328,9 @@ void config_gpio_pins(void){
     //configure output GPIO pins with the given settings
     gpio_config(&o_conf);
 
+	//Initialize gpio pins to off
+	gpio_set_level(FW_PIN, 0);
+
 	//configure input GPIO pins (IR Sensors)
 	/*gpio_reset_pin(IN_PIN_SEL);
 	gpio_set_pull_mode(IN_PIN_SEL,GPIO_PULLUP_ONLY);
@@ -251,6 +340,7 @@ void config_gpio_pins(void){
 void app_main(void){
 	//Set up gpio pins to correct modes
     config_gpio_pins();
+	driving_pwm_init();
 
 	// for some reason just having this makes it faster
 	//!note I would prefer not to have it
@@ -261,18 +351,15 @@ void app_main(void){
     init_espnow_slave();
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
-	//Initialize gpio pins to off
-	gpio_set_level(FW_PIN, 0);
-
 	//init target tracking and turret rotation
 	r_motor_queue = xQueueCreate(4, sizeof(uint32_t));
 	l_motor_queue = xQueueCreate(4, sizeof(uint32_t));
 	firing_queue = xQueueCreate(1,sizeof(uint32_t));
 	turret_queue = xQueueCreate(8,sizeof(uint32_t));
 
-	xTaskCreate(firing_task, "firing_task", 4096, NULL, 3, NULL);
-	xTaskCreate(driving_task, "driving_task", 4096, NULL, 3, NULL);
-	xTaskCreate(turret_task, "turret_task", 4096, NULL, 3, NULL);
+	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
+	xTaskCreate(driving_task, "driving_task", 4096, NULL, 5, NULL);
+	xTaskCreate(turret_task, "turret_task", 4096, NULL, 5, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){

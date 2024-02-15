@@ -48,6 +48,16 @@
 #define DUTY_MIN_TURRET     8   // 5% duty cycle (0 degrees)
 #define DUTY_MAX_TURRET     45  // 10% duty cycle (270 degrees?)
 
+//DC Driving Motors Variables
+#define DRIVING_PWM_TIMER   LEDC_TIMER_2
+#define RB_PWM_CHANNEL   	LEDC_CHANNEL_2
+#define RF_PWM_CHANNEL   	LEDC_CHANNEL_3
+#define LF_PWM_CHANNEL   	LEDC_CHANNEL_4
+#define LB_PWM_CHANNEL   	LEDC_CHANNEL_5
+
+#define PWM_FREQ 1000       // PWM frequency in Hz
+#define PWM_RESOLUTION 10   // PWM resolution in bits
+
 #define ON 0
 #define OFF 1
 #define TRUE 1
