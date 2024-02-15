@@ -4,6 +4,212 @@
 static const char *TAG = "tank_espnow_custom";
 
 static uint32_t fw_state = 0;
+static uint32_t right_drive = 0; //1 = Right Forward, 2 = Right Back
+static uint32_t left_drive = 0; //1 = Left Forward, 2 = Left Back
+static uint32_t fire_servo = 0;
+static uint32_t rotate_turret = 0;
+
+/**************************************************
+* Title:	turret_task
+* Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
+* Param:
+* Return:
+**************************************************/
+void turret_task(void *pvParameter){
+	esp_rom_gpio_pad_select_gpio(TURRET_PIN);
+
+    ledc_timer_config_t timer_conf1;
+    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf1.timer_num = TURRET_PWM_TIMER;
+	timer_conf1.duty_resolution = DUTY_RESOL;
+    timer_conf1.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf1);
+
+    ledc_channel_config_t ledc_conf1;
+    ledc_conf1.gpio_num = TURRET_PIN;
+    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf1.channel = TURRET_PWM_CHANNEL;
+    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
+    ledc_conf1.duty = 0;
+    ledc_conf1.hpoint = 0;
+    ledc_channel_config(&ledc_conf1);
+
+	while (1) {
+		//Wait for a message to be received from firing_task for a fire button press
+		/*if(uxQueueMessagesWaiting(turret_queue) > 0){
+			if(xQueueReceive(turret_queue,rotate_turret,25)== pdTRUE){}
+		}*/
+        // Wait until the GPIO pin controlling the servo motor is pulled low
+		if(rotate_turret == 1){
+			ESP_LOGI(TAG, "Turret Servo Activated");
+			// Move the servo from 0 to 270 degrees
+            for (int degree = 0; degree <= SERVO_MAX_DEGREE; degree++) {
+                // Calculate duty cycle corresponding to the current degree
+                uint32_t duty = (uint32_t) ((SERVO_MIN_PULSEWIDTH + 
+                                            (SERVO_MAX_PULSEWIDTH - SERVO_MIN_PULSEWIDTH) * degree / SERVO_MAX_DEGREE) 
+                                            * (1 << TURRET_PWM_TIMER) / 1000);
+                // Set duty cycle
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+            }
+
+            // Move the servo from 270 to 0 degrees (back to initial position)
+            for (int degree = SERVO_MAX_DEGREE; degree >= 0; degree--) {
+                // Calculate duty cycle corresponding to the current degree
+                uint32_t duty = (uint32_t) ((SERVO_MIN_PULSEWIDTH + 
+                                            (SERVO_MAX_PULSEWIDTH - SERVO_MIN_PULSEWIDTH) * degree / SERVO_MAX_DEGREE) 
+                                            * (1 << TURRET_PWM_TIMER) / 1000);
+                // Set duty cycle
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+            }
+		}
+    }
+}
+
+/**************************************************
+* Title:	firing_task
+* Summary:	function activates the firing mechanism micro servo motor
+            Which rotates forward (180 Deg) then back (0 Deg) and pushes 
+            out the nerf dart using the 3D printed rack and pinion 
+* Param:
+* Return:
+**************************************************/
+void firing_task(void *pvParameter) {
+    esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
+
+    ledc_timer_config_t timer_conf0;
+    timer_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf0.timer_num = SERVO_PWM_TIMER;
+	timer_conf0.duty_resolution = DUTY_RESOLUTION;
+    timer_conf0.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf0);
+
+    ledc_channel_config_t ledc_conf0;
+    ledc_conf0.gpio_num = FIRE_SERVO_PIN;
+    ledc_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf0.channel = SERVO_PWM_CHANNEL;
+    ledc_conf0.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf0.timer_sel = SERVO_PWM_TIMER;
+    ledc_conf0.duty = 4;
+    ledc_conf0.hpoint = 0;
+    ledc_channel_config(&ledc_conf0);
+
+	//static uint32_t fire_servo = 0;
+
+    while (1) {
+		//Wait for a message to be received from firing_task for a fire button press
+		/*if(uxQueueMessagesWaiting(firing_queue) > 0){
+			if(xQueueReceive(firing_queue,&fire_servo,25)== pdTRUE){}
+		}*/
+        // Wait until the GPIO pin controlling the servo motor is pulled low
+		if(fire_servo == 1){
+			ESP_LOGI(TAG, "Firing Servo Activated");
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+            for(int i = 0; i < 2; i++){
+                // Rotate the servo forward (180 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX_FIRE);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
+
+                // Rotate the servo back to the starting position (0 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+            }
+        }
+        if(fire_servo == 0){
+            // Rotate the servo back to the starting position (0 degrees)
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
+            vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+        }
+    }
+}
+
+/**************************************************
+* Title:	driving_task
+* Summary:	function activates the driving motors of the tank using the h-bridge,
+            it drives the motors clockwise or counterclock wise while a driving 
+            button is being press on the remote
+* Param:
+* Return:
+**************************************************/
+void driving_task(void *pvParameter) {
+    /*esp_rom_gpio_pad_select_gpio(RF_IN2_PIN);
+    esp_rom_gpio_pad_select_gpio(RB_IN1_PIN);
+    esp_rom_gpio_pad_select_gpio(LF_IN3_PIN);
+    esp_rom_gpio_pad_select_gpio(LB_IN4_PIN);*/
+	
+	
+	while(1){
+		//Wait for a message to be received from driving_task right driving button presses
+		/*if(uxQueueMessagesWaiting(r_motor_queue) > 0){
+			if(xQueueReceive(r_motor_queue,&right_drive,25)== pdTRUE){}
+		}
+
+		//Wait for a message to be received from driving_task left driving button presses
+		if(uxQueueMessagesWaiting(l_motor_queue) > 0){
+			if(xQueueReceive(l_motor_queue,&left_drive,25)== pdTRUE){}
+		}*/
+
+		//Right Forward Motion
+		if (right_drive == 1){
+			ESP_LOGI(TAG, "Right Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+		//Right Backwards Motion
+		else if (right_drive == 2){
+			ESP_LOGI(TAG, "Right Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+		//Right Motor Off
+		else {
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
+		}
+
+		//Left Forwards Motion
+		if (left_drive == 1){
+			ESP_LOGI(TAG, "Left Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+		//Left Backwards Motion 
+		else if (left_drive == 2){
+			ESP_LOGI(TAG, "Left Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
+                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+		//Left Motor Off
+		else {
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, 0);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
+		}
+		vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust control frequency
+	}
+}
 
 /**************************************************
 * Title:	recv_cb
@@ -15,9 +221,9 @@ static uint32_t fw_state = 0;
 * Return:
 **************************************************/
 void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
-    static uint32_t fire_servo = 0;	
-    static uint32_t right_drive = 0;
-	static uint32_t left_drive = 0;
+    //static uint32_t fire_servo = 0;	
+    //static uint32_t right_drive = 0;
+	//static uint32_t left_drive = 0;
 
     if(len != sizeof(my_data_t))
     {
@@ -29,11 +235,11 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 							  //because we checked the length above
 
-    ESP_LOGI(TAG, "message_type: %d", packet->message_type);
-    ESP_LOGI(TAG, "rf: %d", packet->rf);
-    ESP_LOGI(TAG, "rb: %d", packet->rb);
-    ESP_LOGI(TAG, "lf: %d", packet->lf);
-    ESP_LOGI(TAG, "lb: %d", packet->lb);
+    //ESP_LOGI(TAG, "message_type: %d", packet->message_type);
+    //ESP_LOGI(TAG, "rf: %d", packet->rf);
+    //ESP_LOGI(TAG, "rb: %d", packet->rb);
+    //ESP_LOGI(TAG, "lf: %d", packet->lf);
+    //ESP_LOGI(TAG, "lb: %d", packet->lb);
     //ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
     //ESP_LOGI(TAG, "activate_fw: %d", packet->activate_fw);
 
@@ -46,41 +252,41 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         //If both right buttons are not pressed/pressed turn motor off
         if ((packet->rf == 0) && (packet->rb == 0)){
             right_drive = 0;
-            xQueueSendToBack(r_motor_queue,right_drive,25);
+           // xQueueSendToBack(r_motor_queue,right_drive,25);
         } 
-        else if ((packet->rf == 1) && (packet->rb == 1)){
+        if ((packet->rf == 1) && (packet->rb == 1)){
             right_drive = 0;
-            xQueueSendToBack(r_motor_queue,right_drive,25);
+            //xQueueSendToBack(r_motor_queue,right_drive,25);
         } 
         //Right Forward Button Pressed 
-        else if (packet->rf == 1){
+        if (packet->rf == 1){
             right_drive = 1;
-            xQueueSendToBack(r_motor_queue,right_drive,25);
+            //xQueueSendToBack(r_motor_queue,right_drive,25);
         }
         //Right Back Button Pressed
         else if (packet->rb == 1){
             right_drive = 2;
-            xQueueSendToBack(r_motor_queue,right_drive,25);
+            //xQueueSendToBack(r_motor_queue,right_drive,25);
         }
 
         //If both left buttons are not pressed/pressed turn motor off
         if ((packet->lf == 0) && (packet->lb == 0)){
             left_drive = 0;
-            xQueueSendToBack(l_motor_queue,left_drive,25);
+            //xQueueSendToBack(l_motor_queue,left_drive,25);
         } 
-        else if ((packet->lf == 1) && (packet->lb == 1)){
+        if ((packet->lf == 1) && (packet->lb == 1)){
             left_drive = 0;
-            xQueueSendToBack(l_motor_queue,left_drive,25);
+            //xQueueSendToBack(l_motor_queue,left_drive,25);
         }
         //Left Forward Button Pressed 
-        else if (packet->lf == 1){
+        if (packet->lf == 1){
             left_drive = 1;
-            xQueueSendToBack(l_motor_queue,left_drive,25);
+            //xQueueSendToBack(l_motor_queue,left_drive,25);
         }
         //Left Back Button Pressed
         else if (packet->lb == 1){
             left_drive = 2;
-            xQueueSendToBack(l_motor_queue,left_drive,25);
+            //xQueueSendToBack(l_motor_queue,left_drive,25);
         }
         /********************************************************************/
         //Fire Button Monitoring
@@ -88,11 +294,11 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         if(fw_state == 1){
             if(packet->fire_turret == 1){
                 fire_servo = 1;
-                xQueueSendToBack(firing_queue,fire_servo,25);
+                //xQueueSendToBack(firing_queue,fire_servo,25);
             }
             else{
                 fire_servo = 0;
-                xQueueSendToBack(firing_queue,fire_servo,25);
+                //xQueueSendToBack(firing_queue,fire_servo,25);
             }
         }
         /********************************************************************/
@@ -101,8 +307,11 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         if (packet->activate_fw == 1){
             fw_state = ! fw_state;
             gpio_set_level(FW_PIN, fw_state);
+            rotate_turret = 1;
         }
-
+        else {
+            rotate_turret = 0;
+        }
 	}
 	return;
 }

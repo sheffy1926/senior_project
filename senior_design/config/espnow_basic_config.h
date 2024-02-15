@@ -9,6 +9,12 @@
 //change this value to compile for different tank remote pairs
 #define TANK_REMOTE_PAIR LINK
 
+#define ON 0
+#define OFF 1
+#define TRUE 1
+#define FALSE 0
+#define DEBOUNCE_DELAY_MS 30
+
 //Tank Pins for Motors, Firing Mechanism, Flywheels, 
 //PWM Signals, IR Sensors & Emitters
 #define RB_IN1_PIN 5
@@ -43,26 +49,21 @@
 #define DUTY_MAX_FIRE       32  // 10% duty cycle (180 degrees)
 
 //Turret Servo Variables
-#define TURRET_PWM_CHANNEL   LEDC_CHANNEL_1
-#define TURRET_PWM_TIMER     LEDC_TIMER_1
-#define DUTY_MIN_TURRET     8   // 5% duty cycle (0 degrees)
-#define DUTY_MAX_TURRET     45  // 10% duty cycle (270 degrees?)
+#define TURRET_PWM_CHANNEL  LEDC_CHANNEL_1
+#define TURRET_PWM_TIMER    LEDC_TIMER_1
+#define DUTY_RESOL 			12
+#define SERVO_MIN_PULSEWIDTH   550  // Minimum pulse width in microseconds
+#define SERVO_MAX_PULSEWIDTH   2450 // Maximum pulse width in microseconds
+#define SERVO_MAX_DEGREE       270  // Maximum angle in degrees
 
 //DC Driving Motors Variables
 #define DRIVING_PWM_TIMER   LEDC_TIMER_2
 #define RB_PWM_CHANNEL   	LEDC_CHANNEL_2
 #define RF_PWM_CHANNEL   	LEDC_CHANNEL_3
 #define LF_PWM_CHANNEL   	LEDC_CHANNEL_4
-#define LB_PWM_CHANNEL   	LEDC_CHANNEL_5
-
+#define LB_PWM_CHANNEL  	LEDC_CHANNEL_5
 #define PWM_FREQ 1000       // PWM frequency in Hz
 #define PWM_RESOLUTION 10   // PWM resolution in bits
-
-#define ON 0
-#define OFF 1
-#define TRUE 1
-#define FALSE 0
-#define DEBOUNCE_DELAY_MS 30
 
 //message types
 #define TANK_COMMAND  	1

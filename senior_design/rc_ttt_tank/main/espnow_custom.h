@@ -25,10 +25,10 @@
 static EventGroupHandle_t s_evt_group;
 
 //Global Queue Handlers 
-QueueHandle_t r_motor_queue;
-QueueHandle_t l_motor_queue;
-QueueHandle_t firing_queue;
-QueueHandle_t turret_queue;
+/*static QueueHandle_t r_motor_queue;
+static QueueHandle_t l_motor_queue;
+static QueueHandle_t firing_queue;
+static QueueHandle_t turret_queue;*/
 
 typedef struct {
     esp_now_recv_info_t sender_mac_addr[ESP_NOW_ETH_ALEN];
@@ -78,14 +78,6 @@ void firing_task(void *pvParameter);
 void driving_task(void *pvParameter);
 
 /**************************************************
-* Title:	driving_pwm_init
-* Summary:	initialize pwm channels and signals for driving DC motors 
-* Param:
-* Return:
-**************************************************/
-void driving_pwm_init(void)
-
-/**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are received
 *			interprets data received in data packet from remote
@@ -128,5 +120,13 @@ void init_espnow_slave(void);
 * Return:
 **************************************************/
 void config_gpio_pins(void);
+
+/**************************************************
+* Title:	driving_pwm_init
+* Summary:	initialize pwm channels and signals for driving DC motors 
+* Param:
+* Return:
+**************************************************/
+void driving_pwm_init(void);
 
 #endif //ESP_NOW_CUSTOM_H

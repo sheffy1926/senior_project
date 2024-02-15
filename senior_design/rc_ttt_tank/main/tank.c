@@ -4,19 +4,19 @@
  * Tank DONE List:
  * 	Update PINS to be the correct mode. LEDs as outputs (manually)
  * 	Update ESP LOG Message to determine what LEDs are working correctly/receiving signal from espnow
+ *  configure driving button input to turn on LEDs while button is being pressed in test configuration
+ *  reconfigure firing input to activate firing servo motor and then turn its position to start each time (PWM Signal)
+ *  Once test configuration works, pass PWM signal from remote to provide acceleration curve for the motors 
+ *  3D Designed Firing Mechanism, Magazine Holder
  * Tank TODO List:
- * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
- * 	2: Once test configuration works, pass PWM signal from remote to provide acceleration curve for the motors 
- * 	3: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
- * 	4: reconfigure firing input to activate firing servo motor and then turn its position to start each time (PWM Signal)
+ * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor? 
+ * 	2: Research IR Sensors and Emitters
+ * 	3: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
+ * 	4: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
+ * 	5: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
+ * 	6: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
  * 
- * 	5: Research IR Sensors and Emitters
- * 	6: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
- * 	7: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
- * 	8: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	9: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
- * 
- * 	3D Design the Tank's Base, Shell, Turret Connection ,Barrel, Turret Base, Dart Magazine Holder, Firing Mechanism 
+ * 	3D Design the Tank's Base, Shell, Turret Connection ,Barrel, Turret Base 
  * 	Design Custom PCB for Tank 
  * 	Buy more components to have all of the necessary parts to complete the tank except maybe the nerf gun, 
  * 		transistors and the target tracking sensors/emitters, maybe buy more 3D filament 
@@ -66,191 +66,11 @@ static const char *TAG = "tank";
 }*/
 
 /**************************************************
-* Title:	turret_task
-* Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
+* Title:	driving_pwm_init
+* Summary:	initialize pwm channels and signals for driving DC motors 
 * Param:
 * Return:
 **************************************************/
-void turret_task(void *pvParameter){
-	esp_rom_gpio_pad_select_gpio(TURRET_PIN);
-
-    ledc_timer_config_t timer_conf1;
-    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf1.timer_num = TURRET_PWM_TIMER;
-	timer_conf1.duty_resolution = DUTY_RESOLUTION;
-    timer_conf1.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf1);
-
-    ledc_channel_config_t ledc_conf1;
-    ledc_conf1.gpio_num = TURRET_PIN;
-    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf1.channel = TURRET_PWM_CHANNEL;
-    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf1.duty = 4;
-    ledc_conf1.hpoint = 0;
-    ledc_channel_config(&ledc_conf1);
-
-	static uint32_t rotate_turret = 1;
-
-	while (1) {
-		//Wait for a message to be received from firing_task for a fire button press
-		/*if(uxQueueMessagesWaiting(turret_queue) > 0){
-			if(xQueueReceive(turret_queue,rotate_turret,25)== pdTRUE){}
-		}*/
-        // Wait until the GPIO pin controlling the servo motor is pulled low
-		if(rotate_turret == 1){
-			ESP_LOGI(TAG, "Turret Servo Activated");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                // Rotate the servo forward (270 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
-
-                // Rotate the servo back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MIN_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
-            }
-		}
-    }
-}
-
-/**************************************************
-* Title:	firing_task
-* Summary:	function activates the firing mechanism micro servo motor
-            Which rotates forward (180 Deg) then back (0 Deg) and pushes 
-            out the nerf dart using the 3D printed rack and pinion 
-* Param:
-* Return:
-**************************************************/
-void firing_task(void *pvParameter) {
-    esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
-
-    ledc_timer_config_t timer_conf0;
-    timer_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf0.timer_num = SERVO_PWM_TIMER;
-	timer_conf0.duty_resolution = DUTY_RESOLUTION;
-    timer_conf0.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf0);
-
-    ledc_channel_config_t ledc_conf0;
-    ledc_conf0.gpio_num = FIRE_SERVO_PIN;
-    ledc_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf0.channel = SERVO_PWM_CHANNEL;
-    ledc_conf0.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf0.timer_sel = SERVO_PWM_TIMER;
-    ledc_conf0.duty = 4;
-    ledc_conf0.hpoint = 0;
-    ledc_channel_config(&ledc_conf0);
-
-	static uint32_t fire_servo = 0;
-
-    while (1) {
-		//Wait for a message to be received from firing_task for a fire button press
-		if(uxQueueMessagesWaiting(firing_queue) > 0){
-			if(xQueueReceive(firing_queue,fire_servo,25)== pdTRUE){}
-		}
-        // Wait until the GPIO pin controlling the servo motor is pulled low
-		if(fire_servo == 1){
-			ESP_LOGI(TAG, "Firing Servo Activated");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                // Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX_FIRE);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 1 second
-
-                // Rotate the servo back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
-            }
-		}
-    }
-}
-
-/**************************************************
-* Title:	driving_task
-* Summary:	function activates the driving motors of the tank using the h-bridge,
-            it drives the motors clockwise or counterclock wise while a driving 
-            button is being press on the remote
-* Param:
-* Return:
-**************************************************/
-void driving_task(void *pvParameter) {
-	static uint32_t right_drive = 0; //1 = Right Forward, 2 = Right Back
-	static uint32_t left_drive = 0; //1 = Left Forward, 2 = Left Back
-	
-	while(1){
-		//Wait for a message to be received from driving_task right driving button presses
-		if(uxQueueMessagesWaiting(r_motor_queue) > 0){
-			if(xQueueReceive(r_motor_queue,right_drive,25)== pdTRUE){}
-		}
-
-		//Wait for a message to be received from driving_task left driving button presses
-		if(uxQueueMessagesWaiting(l_motor_queue) > 0){
-			if(xQueueReceive(l_motor_queue,left_drive,25)== pdTRUE){}
-		}
-
-		//Right Forward Motion
-		if (right_drive = 1){
-			ESP_LOGI(TAG, "Right Forward Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Right Backwards Motion
-		else if (right_drive == 2){
-			ESP_LOGI(TAG, "Right Back Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Right Motor Off
-		else if (right_drive == 0){
-			ESP_LOGI(TAG, "Right Motor Off");
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
-            ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
-		}
-
-		//Left Forwards Motion
-		if (left_drive == 1){
-			ESP_LOGI(TAG, "Left Forward Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Left Backwards Motion 
-		else if (left_drive == 2){
-			ESP_LOGI(TAG, "Left Back Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Left Motor Off
-		else if (left_drive == 0){
-			ESP_LOGI(TAG, "Left Motor Off");
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
-            ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
-		}
-		vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust control frequency
-	}
-}
-
 void driving_pwm_init(void){
 	// Configure PWM timer
     ledc_timer_config_t timer_conf2 = {
@@ -312,6 +132,12 @@ void driving_pwm_init(void){
     ledc_fade_func_install(0);
 }
 
+/**************************************************
+* Title: config_gpio_pins
+* Summary: set up gpio pins for the tank esp32
+* Param:
+* Return:
+**************************************************/
 void config_gpio_pins(void){
 	//zero-initialize the config structure.
     gpio_config_t o_conf = {};
@@ -330,6 +156,10 @@ void config_gpio_pins(void){
 
 	//Initialize gpio pins to off
 	gpio_set_level(FW_PIN, 0);
+	gpio_set_level(RB_IN1_PIN, 0);
+	gpio_set_level(RF_IN2_PIN, 0);
+	gpio_set_level(LF_IN3_PIN, 0);
+	gpio_set_level(LB_IN4_PIN, 0);
 
 	//configure input GPIO pins (IR Sensors)
 	/*gpio_reset_pin(IN_PIN_SEL);
@@ -352,10 +182,10 @@ void app_main(void){
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//init target tracking and turret rotation
-	r_motor_queue = xQueueCreate(4, sizeof(uint32_t));
-	l_motor_queue = xQueueCreate(4, sizeof(uint32_t));
+	/*r_motor_queue = xQueueCreate(64, sizeof(uint32_t));
+	l_motor_queue = xQueueCreate(64, sizeof(uint32_t));
 	firing_queue = xQueueCreate(1,sizeof(uint32_t));
-	turret_queue = xQueueCreate(8,sizeof(uint32_t));
+	turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
 
 	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
 	xTaskCreate(driving_task, "driving_task", 4096, NULL, 5, NULL);
@@ -363,7 +193,6 @@ void app_main(void){
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){
-
 		vTaskDelay(750 / portTICK_PERIOD_MS);
 	}
 }
