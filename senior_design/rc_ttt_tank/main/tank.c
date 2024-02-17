@@ -87,6 +87,20 @@ void config_gpio_pins(void){
     //configure output GPIO pins with the given settings
     gpio_config(&o_conf);
 
+    /*gpio_config_t i_conf = {};
+    //disable interrupt
+    i_conf.intr_type = GPIO_INTR_DISABLE;
+    //bit mask of the pins
+    i_conf.pin_bit_mask = TURRET_BUT;
+    //set as input mode
+    i_conf.mode = GPIO_MODE_INPUT;
+    //enable pull-up mode
+    i_conf.pull_up_en = 1;
+    //interrupt on both edges
+    i_conf.intr_type = GPIO_INTR_ANYEDGE;	
+    //configure input GPIO pins with the given settings
+    gpio_config(&i_conf);*/
+
 	//Initialize gpio pins to off
 	gpio_set_level(FW_PIN, 0);
 	gpio_set_level(RB_IN1_PIN, 0);
@@ -117,8 +131,8 @@ void app_main(void){
 	/*firing_queue = xQueueCreate(1,sizeof(uint32_t));
 	turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
 
-	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
-	//xTaskCreate(turret_task, "turret_task", 1024, NULL, 5, NULL);
+	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
+    xTaskCreate(turret_task, "turret_task", 1024, NULL, 5, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){

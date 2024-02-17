@@ -53,7 +53,7 @@ typedef struct {
 * Param:
 * Return:
 **************************************************/
-//void turret_task(void *pvParameter);
+void turret_task(void *pvParameter);
 
 /**************************************************
 * Title:	firing_task

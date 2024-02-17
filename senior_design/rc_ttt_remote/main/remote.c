@@ -42,7 +42,7 @@
 #include "espnow_basic_config.h"
 
 #define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT))
-#define FIRE_PIN_SEL ((1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
+#define FIRE_PIN_SEL ((1ULL<<FIRE_BUT) | (1ULL<<FW_BUT) | (1ULL<<TURRET_BUT))
 #define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED))
 
 static const char *TAG = "remote";
@@ -107,6 +107,10 @@ esp_err_t send_espnow_data(void){
 	    data.fire_turret = !(gpio_get_level(FIRE_BUT));
     }
 	data.activate_fw = !(gpio_get_level(FW_BUT));
+    data.activate_turret = !(gpio_get_level(TURRET_BUT));
+
+    if((gpio_get_level(TURRET_BUT)) == 0){	
+        ESP_LOGI(TAG, "Turret Button Press");}
     
     if((gpio_get_level(RF_BUT)) == 0){	
         ESP_LOGI(TAG, "RF Button Press");} 
@@ -269,10 +273,9 @@ void firing_buttons(int fire_but_level){
     //Turn on FIRE LED for 1 sec each time it is pressed 
     if (led_state == TRUE){
         if(fire_but_level == 1){
-            vTaskDelay(10 / portTICK_PERIOD_MS);
             gpio_set_level(FIRE_LED, 1);
             ESP_LOGI(TAG,"Fire Button Pressed");
-            vTaskDelay(1500 / portTICK_PERIOD_MS);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
             gpio_set_level(FIRE_LED, 0);
         }
         else{
@@ -352,6 +355,7 @@ void app_main(void){
     gpio_isr_handler_add(LB_BUT,   gpio_isr_handler, (void*) LB_BUT   );
     gpio_isr_handler_add(FIRE_BUT, gpio_isr_handler, (void*) FIRE_BUT );
     gpio_isr_handler_add(FW_BUT,   gpio_isr_handler, (void*) FW_BUT   );
+    gpio_isr_handler_add(TURRET_BUT,   gpio_isr_handler, (void*) TURRET_BUT   );
 
     //Initalize Status LEDs to off 
 	gpio_set_level(FIRE_LED, 0);
