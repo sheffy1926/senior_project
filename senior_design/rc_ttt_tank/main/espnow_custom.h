@@ -25,9 +25,7 @@
 static EventGroupHandle_t s_evt_group;
 
 //Global Queue Handlers 
-/*static QueueHandle_t r_motor_queue;
-static QueueHandle_t l_motor_queue;
-static QueueHandle_t firing_queue;
+/*static QueueHandle_t firing_queue;
 static QueueHandle_t turret_queue;*/
 
 typedef struct {
@@ -55,7 +53,7 @@ typedef struct {
 * Param:
 * Return:
 **************************************************/
-void turret_task(void *pvParameter);
+//void turret_task(void *pvParameter);
 
 /**************************************************
 * Title:	firing_task
@@ -66,16 +64,6 @@ void turret_task(void *pvParameter);
 * Return:
 **************************************************/
 void firing_task(void *pvParameter);
-
-/**************************************************
-* Title:	driving_task
-* Summary:	function activates the driving motors of the tank using the h bridge,
-            it drives the motors clockwise or counterclock wise while a driving 
-            button is being press on the remote
-* Param:
-* Return:
-**************************************************/
-void driving_task(void *pvParameter);
 
 /**************************************************
 * Title:	recv_cb
@@ -120,13 +108,5 @@ void init_espnow_slave(void);
 * Return:
 **************************************************/
 void config_gpio_pins(void);
-
-/**************************************************
-* Title:	driving_pwm_init
-* Summary:	initialize pwm channels and signals for driving DC motors 
-* Param:
-* Return:
-**************************************************/
-void driving_pwm_init(void);
 
 #endif //ESP_NOW_CUSTOM_H

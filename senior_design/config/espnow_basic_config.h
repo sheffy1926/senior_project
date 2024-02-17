@@ -21,14 +21,17 @@
 #define RF_IN2_PIN 18
 #define LF_IN3_PIN 19
 #define LB_IN4_PIN 21 
-#define TURRET_PIN 12
+#define TURRET_PIN 13
 #define FIRE_SERVO_PIN 15 
-#define FW_PIN 25
-/* #define IR_S_1 22
-#define IR_S_2 23
-#define IR_S_3 34
-#define IR_S_4 35
-#define IR_EMIT 21 */
+#define FW_PIN 12
+/* #define IR_S_1 14
+#define IR_S_2 27
+#define IR_S_3 26
+#define IR_S_4 25
+#define IR_S_5 33
+#define IR_S_6 32
+#define IR_S_7 35
+#define IR_EMIT 4 */
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12
@@ -41,29 +44,20 @@
 #define FW_LED 18
 
 //Firing Servo Variables
-#define SERVO_PWM_CHANNEL   LEDC_CHANNEL_0
-#define SERVO_PWM_TIMER     LEDC_TIMER_0
-#define DUTY_RESOLUTION 	8
-#define PWM_FREQUENCY      	50 	// Hz
-#define DUTY_MIN_FIRE       8   // 5% duty cycle (0 degrees)
-#define DUTY_MAX_FIRE       32  // 10% duty cycle (180 degrees)
+#define SERVO_PWM_CHANNEL   	LEDC_CHANNEL_0
+#define SERVO_PWM_TIMER     	LEDC_TIMER_0
+#define DUTY_RESOLUTION 		8
+#define PWM_FREQUENCY      		50 	// Hz
+#define DUTY_MIN_FIRE       	8   // 5% duty cycle (0 degrees)
+#define DUTY_MAX_FIRE       	32  // 10% duty cycle (180 degrees)
 
 //Turret Servo Variables
-#define TURRET_PWM_CHANNEL  LEDC_CHANNEL_1
-#define TURRET_PWM_TIMER    LEDC_TIMER_1
-#define DUTY_RESOL 			12
-#define SERVO_MIN_PULSEWIDTH   550  // Minimum pulse width in microseconds
-#define SERVO_MAX_PULSEWIDTH   2450 // Maximum pulse width in microseconds
-#define SERVO_MAX_DEGREE       270  // Maximum angle in degrees
-
-//DC Driving Motors Variables
-#define DRIVING_PWM_TIMER   LEDC_TIMER_2
-#define RB_PWM_CHANNEL   	LEDC_CHANNEL_2
-#define RF_PWM_CHANNEL   	LEDC_CHANNEL_3
-#define LF_PWM_CHANNEL   	LEDC_CHANNEL_4
-#define LB_PWM_CHANNEL  	LEDC_CHANNEL_5
-#define PWM_FREQ 1000       // PWM frequency in Hz
-#define PWM_RESOLUTION 10   // PWM resolution in bits
+#define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
+#define TURRET_PWM_TIMER    	LEDC_TIMER_1
+#define DUTY_RESOL 				10
+#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
+#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
+#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
 
 //message types
 #define TANK_COMMAND  	1

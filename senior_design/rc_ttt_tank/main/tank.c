@@ -47,7 +47,7 @@
 #include "espnow_basic_config.h"
 
 //| (1ULL<<IR_EMIT)
-#define OUT_PIN_SEL ((1ULL<<RB_IN1_PIN) | (1ULL<<RF_IN2_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_SERVO_PIN))
+#define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_SERVO_PIN))
 //#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) )
 static const char *TAG = "tank";
 
@@ -64,73 +64,6 @@ static const char *TAG = "tank";
 
 	}
 }*/
-
-/**************************************************
-* Title:	driving_pwm_init
-* Summary:	initialize pwm channels and signals for driving DC motors 
-* Param:
-* Return:
-**************************************************/
-void driving_pwm_init(void){
-	// Configure PWM timer
-    ledc_timer_config_t timer_conf2 = {
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .duty_resolution = PWM_RESOLUTION,
-        .timer_num = DRIVING_PWM_TIMER,
-        .freq_hz = PWM_FREQ,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    ledc_timer_config(&timer_conf2);
-
-    // Configure PWM channels for right motor
-    ledc_channel_config_t rb_in1_conf = {
-        .gpio_num = RB_IN1_PIN,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = RB_PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = DRIVING_PWM_TIMER,
-        .duty = 0,
-        .hpoint = 0,
-    };
-    ledc_channel_config(&rb_in1_conf);
-
-    ledc_channel_config_t rf_in2_conf = {
-        .gpio_num = RF_IN2_PIN,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = RF_PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = DRIVING_PWM_TIMER,
-        .duty = 0,
-        .hpoint = 0,
-    };
-    ledc_channel_config(&rf_in2_conf);
-
-    // Configure PWM channels for left motor
-    ledc_channel_config_t lf_in3_conf = {
-        .gpio_num = LF_IN3_PIN,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = LF_PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = DRIVING_PWM_TIMER,
-        .duty = 0,
-        .hpoint = 0,
-    };
-    ledc_channel_config(&lf_in3_conf);
-
-    ledc_channel_config_t lb_in4_conf = {
-        .gpio_num = LB_IN4_PIN,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = LB_PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = DRIVING_PWM_TIMER,
-        .duty = 0,
-        .hpoint = 0,
-    };
-    ledc_channel_config(&lb_in4_conf);
-
-    // Start the PWM generator
-    ledc_fade_func_install(0);
-}
 
 /**************************************************
 * Title: config_gpio_pins
@@ -157,9 +90,9 @@ void config_gpio_pins(void){
 	//Initialize gpio pins to off
 	gpio_set_level(FW_PIN, 0);
 	gpio_set_level(RB_IN1_PIN, 0);
-	gpio_set_level(RF_IN2_PIN, 0);
+    gpio_set_level(RF_IN2_PIN, 0);
 	gpio_set_level(LF_IN3_PIN, 0);
-	gpio_set_level(LB_IN4_PIN, 0);
+    gpio_set_level(LB_IN4_PIN, 0);
 
 	//configure input GPIO pins (IR Sensors)
 	/*gpio_reset_pin(IN_PIN_SEL);
@@ -170,7 +103,6 @@ void config_gpio_pins(void){
 void app_main(void){
 	//Set up gpio pins to correct modes
     config_gpio_pins();
-	driving_pwm_init();
 
 	// for some reason just having this makes it faster
 	//!note I would prefer not to have it
@@ -182,14 +114,11 @@ void app_main(void){
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//init target tracking and turret rotation
-	/*r_motor_queue = xQueueCreate(64, sizeof(uint32_t));
-	l_motor_queue = xQueueCreate(64, sizeof(uint32_t));
-	firing_queue = xQueueCreate(1,sizeof(uint32_t));
+	/*firing_queue = xQueueCreate(1,sizeof(uint32_t));
 	turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
 
 	xTaskCreate(firing_task, "firing_task", 4096, NULL, 5, NULL);
-	xTaskCreate(driving_task, "driving_task", 4096, NULL, 5, NULL);
-	xTaskCreate(turret_task, "turret_task", 4096, NULL, 5, NULL);
+	//xTaskCreate(turret_task, "turret_task", 1024, NULL, 5, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){

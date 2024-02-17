@@ -4,10 +4,8 @@
 static const char *TAG = "tank_espnow_custom";
 
 static uint32_t fw_state = 0;
-static uint32_t right_drive = 0; //1 = Right Forward, 2 = Right Back
-static uint32_t left_drive = 0; //1 = Left Forward, 2 = Left Back
 static uint32_t fire_servo = 0;
-static uint32_t rotate_turret = 0;
+//static uint32_t rotate_turret = 0;
 
 /**************************************************
 * Title:	turret_task
@@ -15,9 +13,7 @@ static uint32_t rotate_turret = 0;
 * Param:
 * Return:
 **************************************************/
-void turret_task(void *pvParameter){
-	esp_rom_gpio_pad_select_gpio(TURRET_PIN);
-
+/*void turret_task(void *pvParameter){
     ledc_timer_config_t timer_conf1;
     timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
     timer_conf1.timer_num = TURRET_PWM_TIMER;
@@ -31,15 +27,15 @@ void turret_task(void *pvParameter){
     ledc_conf1.channel = TURRET_PWM_CHANNEL;
     ledc_conf1.intr_type = LEDC_INTR_DISABLE;
     ledc_conf1.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf1.duty = 0;
+    ledc_conf1.duty = 1024;
     ledc_conf1.hpoint = 0;
     ledc_channel_config(&ledc_conf1);
 
-	while (1) {
+    while (1) {
 		//Wait for a message to be received from firing_task for a fire button press
-		/*if(uxQueueMessagesWaiting(turret_queue) > 0){
+		if(uxQueueMessagesWaiting(turret_queue) > 0){
 			if(xQueueReceive(turret_queue,rotate_turret,25)== pdTRUE){}
-		}*/
+		}
         // Wait until the GPIO pin controlling the servo motor is pulled low
 		if(rotate_turret == 1){
 			ESP_LOGI(TAG, "Turret Servo Activated");
@@ -52,7 +48,7 @@ void turret_task(void *pvParameter){
                 // Set duty cycle
                 ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+                vTaskDelay(20 / portTICK_PERIOD_MS); // Wait for 20 milliseconds
             }
 
             // Move the servo from 270 to 0 degrees (back to initial position)
@@ -64,11 +60,11 @@ void turret_task(void *pvParameter){
                 // Set duty cycle
                 ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
+                vTaskDelay(20 / portTICK_PERIOD_MS); // Wait for 20 milliseconds
             }
 		}
     }
-}
+}*/
 
 /**************************************************
 * Title:	firing_task
@@ -94,12 +90,11 @@ void firing_task(void *pvParameter) {
     ledc_conf0.channel = SERVO_PWM_CHANNEL;
     ledc_conf0.intr_type = LEDC_INTR_DISABLE;
     ledc_conf0.timer_sel = SERVO_PWM_TIMER;
-    ledc_conf0.duty = 4;
+    ledc_conf0.duty = 256;
     ledc_conf0.hpoint = 0;
     ledc_channel_config(&ledc_conf0);
 
 	//static uint32_t fire_servo = 0;
-
     while (1) {
 		//Wait for a message to be received from firing_task for a fire button press
 		/*if(uxQueueMessagesWaiting(firing_queue) > 0){
@@ -131,87 +126,6 @@ void firing_task(void *pvParameter) {
 }
 
 /**************************************************
-* Title:	driving_task
-* Summary:	function activates the driving motors of the tank using the h-bridge,
-            it drives the motors clockwise or counterclock wise while a driving 
-            button is being press on the remote
-* Param:
-* Return:
-**************************************************/
-void driving_task(void *pvParameter) {
-    /*esp_rom_gpio_pad_select_gpio(RF_IN2_PIN);
-    esp_rom_gpio_pad_select_gpio(RB_IN1_PIN);
-    esp_rom_gpio_pad_select_gpio(LF_IN3_PIN);
-    esp_rom_gpio_pad_select_gpio(LB_IN4_PIN);*/
-	
-	
-	while(1){
-		//Wait for a message to be received from driving_task right driving button presses
-		/*if(uxQueueMessagesWaiting(r_motor_queue) > 0){
-			if(xQueueReceive(r_motor_queue,&right_drive,25)== pdTRUE){}
-		}
-
-		//Wait for a message to be received from driving_task left driving button presses
-		if(uxQueueMessagesWaiting(l_motor_queue) > 0){
-			if(xQueueReceive(l_motor_queue,&left_drive,25)== pdTRUE){}
-		}*/
-
-		//Right Forward Motion
-		if (right_drive == 1){
-			ESP_LOGI(TAG, "Right Forward Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Right Backwards Motion
-		else if (right_drive == 2){
-			ESP_LOGI(TAG, "Right Back Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Right Motor Off
-		else {
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RB_PWM_CHANNEL);
-            ledc_set_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, RF_PWM_CHANNEL);
-		}
-
-		//Left Forwards Motion
-		if (left_drive == 1){
-			ESP_LOGI(TAG, "Left Forward Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Left Backwards Motion 
-		else if (left_drive == 2){
-			ESP_LOGI(TAG, "Left Back Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
-                vTaskDelay(100 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}
-		//Left Motor Off
-		else {
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LF_PWM_CHANNEL);
-            ledc_set_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL, 0);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LB_PWM_CHANNEL);
-		}
-		vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust control frequency
-	}
-}
-
-/**************************************************
 * Title:	recv_cb
 * Summary:	call back function called when esp_now messages are received
 *			interprets data received in data packet from remote
@@ -222,8 +136,6 @@ void driving_task(void *pvParameter) {
 **************************************************/
 void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
     //static uint32_t fire_servo = 0;	
-    //static uint32_t right_drive = 0;
-	//static uint32_t left_drive = 0;
 
     if(len != sizeof(my_data_t))
     {
@@ -247,47 +159,40 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
 	} 
     else if(packet->message_type == TANK_COMMAND){
-        /********************************************************************/
-        //Right and Left Motor Button Press Monitoring 
-        //If both right buttons are not pressed/pressed turn motor off
-        if ((packet->rf == 0) && (packet->rb == 0)){
-            right_drive = 0;
-           // xQueueSendToBack(r_motor_queue,right_drive,25);
-        } 
-        if ((packet->rf == 1) && (packet->rb == 1)){
-            right_drive = 0;
-            //xQueueSendToBack(r_motor_queue,right_drive,25);
-        } 
-        //Right Forward Button Pressed 
-        if (packet->rf == 1){
-            right_drive = 1;
-            //xQueueSendToBack(r_motor_queue,right_drive,25);
-        }
-        //Right Back Button Pressed
-        else if (packet->rb == 1){
-            right_drive = 2;
-            //xQueueSendToBack(r_motor_queue,right_drive,25);
-        }
+        gpio_set_level(RF_IN2_PIN, packet->rf);
+        gpio_set_level(RB_IN1_PIN, packet->rb);
+        gpio_set_level(LF_IN3_PIN, packet->lf);
+        gpio_set_level(LB_IN4_PIN, packet->lb);
+        
+        //Right Forward Motion
+		/*if (packet->rf == 1){
+			ESP_LOGI(TAG, "Right Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+        //Right Backward Motion
+        if (packet->rb == 1){
+			ESP_LOGI(TAG, "Right Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                //vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+        //Left Forward Motion
+		if (packet->lf == 1){
+			ESP_LOGI(TAG, "Left Forward Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}
+        //Left Backward Motion
+        if (packet->lb == 1){
+			ESP_LOGI(TAG, "Left Back Activated");
+			for (int duty = 0; duty <= 1023; duty += 100) {
+                //vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
+            }
+		}*/
 
-        //If both left buttons are not pressed/pressed turn motor off
-        if ((packet->lf == 0) && (packet->lb == 0)){
-            left_drive = 0;
-            //xQueueSendToBack(l_motor_queue,left_drive,25);
-        } 
-        if ((packet->lf == 1) && (packet->lb == 1)){
-            left_drive = 0;
-            //xQueueSendToBack(l_motor_queue,left_drive,25);
-        }
-        //Left Forward Button Pressed 
-        if (packet->lf == 1){
-            left_drive = 1;
-            //xQueueSendToBack(l_motor_queue,left_drive,25);
-        }
-        //Left Back Button Pressed
-        else if (packet->lb == 1){
-            left_drive = 2;
-            //xQueueSendToBack(l_motor_queue,left_drive,25);
-        }
         /********************************************************************/
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
@@ -307,10 +212,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         if (packet->activate_fw == 1){
             fw_state = ! fw_state;
             gpio_set_level(FW_PIN, fw_state);
-            rotate_turret = 1;
-        }
-        else {
-            rotate_turret = 0;
         }
 	}
 	return;
@@ -348,7 +249,6 @@ esp_err_t send_espnow_data(void){
         ESP_LOGE(TAG, "Send error (%d)", err);
         return ESP_FAIL;
     }
-
     ESP_LOGI(TAG, "Sent!");
     return ESP_OK;
 }
