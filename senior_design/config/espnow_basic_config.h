@@ -7,7 +7,7 @@
 #define LINK	1
 #define ZELDA	2
 //change this value to compile for different tank remote pairs
-#define TANK_REMOTE_PAIR LINK
+#define TANK_REMOTE_PAIR ZELDA
 
 #define ON 0
 #define OFF 1
@@ -89,8 +89,8 @@ typedef struct __attribute__((packed)) {
 } my_data_t;
 
 //LINK
-#define PAIR_1_TANK_MAC		{0x48, 0xE7, 0x29, 0xB6, 0x76, 0x9C} //This is correct
-#define PAIR_1_REMOTE_MAC	{0x48, 0xE7, 0x29, 0x96, 0x9C, 0xEC} //This is correct
+#define PAIR_1_TANK_MAC		{0x48, 0xE7, 0x29, 0xB6, 0x76, 0x9C} 
+#define PAIR_1_REMOTE_MAC	{0x48, 0xE7, 0x29, 0x96, 0x9C, 0xEC} 
 #define PAIR_1_REMOTE_MAC_ARR	(uint8_t[])PAIR_1_REMOTE_MAC
 
 //ZELDA
