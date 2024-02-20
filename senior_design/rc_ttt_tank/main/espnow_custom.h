@@ -18,6 +18,7 @@
 #include "esp_now.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include "driver/adc.h"
 
 #include "sdkconfig.h"
 #include "espnow_basic_config.h"

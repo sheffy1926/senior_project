@@ -3,7 +3,7 @@
 //extern static const char *TAG;
 static const char *TAG = "tank_espnow_custom";
 
-static uint32_t fw_state = 0;
+//static uint32_t fw_state = 0;
 static uint32_t fire_servo = 0;
 static uint32_t rotate_turret = 0;
 
@@ -14,10 +14,11 @@ static uint32_t rotate_turret = 0;
 * Return:
 **************************************************/
 void turret_task(void *pvParameter){
+
     ledc_timer_config_t timer_conf1;
     timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
     timer_conf1.timer_num = TURRET_PWM_TIMER;
-	timer_conf1.duty_resolution = DUTY_RESOL;
+	timer_conf1.duty_resolution = DUTY_RESOLUTION;
     timer_conf1.freq_hz = PWM_FREQUENCY;
     ledc_timer_config(&timer_conf1);
 
@@ -27,54 +28,27 @@ void turret_task(void *pvParameter){
     ledc_conf1.channel = TURRET_PWM_CHANNEL;
     ledc_conf1.intr_type = LEDC_INTR_DISABLE;
     ledc_conf1.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf1.duty = 1024;
+    ledc_conf1.duty = 256;
     ledc_conf1.hpoint = 0;
     ledc_channel_config(&ledc_conf1);
 
     while (1) {
-		//Wait for a message to be received from firing_task for a fire button press
-		/*if(uxQueueMessagesWaiting(turret_queue) > 0){
-			if(xQueueReceive(turret_queue,rotate_turret,25)== pdTRUE){}
-		}*/
-        // Wait until the GPIO pin controlling the servo motor is pulled low
-		if(rotate_turret == 1){
+        if(rotate_turret == 1){
 			ESP_LOGI(TAG, "Turret Servo Activated");
-            vTaskDelay(10 / portTICK_PERIOD_MS);
+			vTaskDelay(10 / portTICK_PERIOD_MS);
             for(int i = 0; i < 2; i++){
-                // Rotate the turret forward (270 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MIN_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                // Rotate the servo forward (180 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX_TURRET);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
                 vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
 
-                //Rotate the turret back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                // Rotate the servo back to the starting position (0 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_TURRET);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
+            rotate_turret = 0;
         }
-			// Move the servo from 0 to 270 degrees
-           /*for (int degree = 0; degree <= SERVO_MAX_DEGREE; degree++) {
-                // Calculate duty cycle corresponding to the current degree
-                uint32_t duty = (uint32_t) ((SERVO_MIN_PULSEWIDTH + 
-                                            (SERVO_MAX_PULSEWIDTH - SERVO_MIN_PULSEWIDTH) * degree / SERVO_MAX_DEGREE) 
-                                            * (1 << TURRET_PWM_TIMER) / 1000);
-                // Set duty cycle
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(20 / portTICK_PERIOD_MS); // Wait for 20 milliseconds
-            }
-
-            // Move the servo from 270 to 0 degrees (back to initial position)
-            for (int degree = SERVO_MAX_DEGREE; degree >= 0; degree--) {
-                // Calculate duty cycle corresponding to the current degree
-                uint32_t duty = (uint32_t) ((SERVO_MIN_PULSEWIDTH + 
-                                            (SERVO_MAX_PULSEWIDTH - SERVO_MIN_PULSEWIDTH) * degree / SERVO_MAX_DEGREE) 
-                                            * (1 << TURRET_PWM_TIMER) / 1000);
-                // Set duty cycle
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(20 / portTICK_PERIOD_MS); // Wait for 20 milliseconds
-            }*/
 	}
 }
 
@@ -128,12 +102,6 @@ void firing_task(void *pvParameter) {
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
         }
-        if(fire_servo == 0){
-            // Rotate the servo back to the starting position (0 degrees)
-            ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
-            ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-            vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
-        }
     }
 }
 
@@ -170,10 +138,20 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
 	} 
     else if(packet->message_type == TANK_COMMAND){
+        //Driving Button Monitoring
         gpio_set_level(RF_IN2_PIN, packet->rf);
         gpio_set_level(RB_IN1_PIN, packet->rb);
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
+        //Flywheel Button Monitoring
+        //Toggle FW LED
+        gpio_set_level(FW_PIN, packet->fw_led);
+        /*if (packet->activate_fw == 1){
+            rotate_turret = 1;
+        }
+        else {
+            rotate_turret = 0;
+        }*/
         
         //Right Forward Motion
 		/*if (packet->rf == 1){
@@ -203,11 +181,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
                 //vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
             }
 		}*/
-
         /********************************************************************/
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
-        if(fw_state == 1){
+        if(packet->fw_led == 1){
             if(packet->fire_turret == 1){
                 fire_servo = 1;
                 //xQueueSendToBack(firing_queue,fire_servo,25);
@@ -218,21 +195,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
             }
         }
         /********************************************************************/
-        //Flywheel Button Monitoring
-        //Toggle FW LED
-        if (packet->activate_fw == 1){
-            fw_state = ! fw_state;
-            gpio_set_level(FW_PIN, fw_state);
-        }
-
-        //Rotate Turret based on button push
-        if (packet->activate_turret == 1){
-            rotate_turret = 1;
-        }
-        else {
-            rotate_turret = 0;
-        }
-	}
+    }
 	return;
 }
 

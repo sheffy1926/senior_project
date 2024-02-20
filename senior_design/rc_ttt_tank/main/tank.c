@@ -41,6 +41,7 @@
 #include "esp_now.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include "driver/adc.h"
 
 #include "espnow_custom.h"
 #include "sdkconfig.h"
@@ -48,7 +49,7 @@
 
 //| (1ULL<<IR_EMIT)
 #define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_SERVO_PIN))
-//#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) )
+//#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7))
 static const char *TAG = "tank";
 
 /**************************************************
@@ -132,7 +133,7 @@ void app_main(void){
 	turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
 
 	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
-    xTaskCreate(turret_task, "turret_task", 1024, NULL, 5, NULL);
+    xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
 	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
 
 	while(1){

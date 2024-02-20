@@ -3,18 +3,16 @@
 /****************************************************
  * Remote DONE List:
  * 	Update ESP LOG Message to determine what buttons/LEDs are working correctly
+ *  configure driving button input to turn on LEDs while button is being pressed in test configuration
  * 	Make it so Flywheel active LED is turned on directly from remote button press
  *  configure flywheel input LED to be toggled on/off by button press (test)
  * 	configure firing input LED each time button is pressed for short duration (test)
+ *  reconfigure firing input to activate firing servo motor each time button is pressed (PWM Signal)
  * Remote TODO List:
- * 	1: configure driving button input to turn on LEDs while button is being pressed in test configuration
-
- * 	4: test configuration works, develop PWM signal to make a acceleration function for driving input to the motors 
- * 	5: reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
- * 	6: reconfigure firing input to activate firing servo motor each time button is released (PWM Signal)
+ * 	1: Make a acceleration function for driving input to the motors (On Tank)
+ * 	2: Reconfigure flywheel input to toggle on flywheels by flipping a transistor? (Need to research this more)
  * 
  * 	3D Design Remote. With Grips? 
- * 	Design Custom PCB for Remote
  * 	Buy RC battery for remote or just use 9V batteries?
 ****************************************************/
 
@@ -42,7 +40,7 @@
 #include "espnow_basic_config.h"
 
 #define IN_PIN_SEL ((1ULL<<RF_BUT) | (1ULL<<RB_BUT) | (1ULL<<LF_BUT) | (1ULL<<LB_BUT))
-#define FIRE_PIN_SEL ((1ULL<<FIRE_BUT) | (1ULL<<FW_BUT) | (1ULL<<TURRET_BUT))
+#define FIRE_PIN_SEL ((1ULL<<FIRE_BUT) | (1ULL<<FW_BUT))
 #define OUT_PIN_SEL ((1ULL<<FW_LED) | (1ULL<<FIRE_LED))
 
 static const char *TAG = "remote";
@@ -71,11 +69,9 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         ESP_LOGE(TAG, "Unexpected data length: %d != %u", len, sizeof(my_data_t));
         return;
     }
-
 	//move the tank accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 								//because we checked the length above
-
 	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type received from tank");
 	} /*else{
@@ -107,11 +103,8 @@ esp_err_t send_espnow_data(void){
 	    data.fire_turret = !(gpio_get_level(FIRE_BUT));
     }
 	data.activate_fw = !(gpio_get_level(FW_BUT));
-    data.activate_turret = !(gpio_get_level(TURRET_BUT));
+    data.fw_led = led_state;
 
-    if((gpio_get_level(TURRET_BUT)) == 0){	
-        ESP_LOGI(TAG, "Turret Button Press");}
-    
     if((gpio_get_level(RF_BUT)) == 0){	
         ESP_LOGI(TAG, "RF Button Press");} 
     if((gpio_get_level(RB_BUT)) == 0){
@@ -219,7 +212,6 @@ static void IRAM_ATTR gpio_isr_handler(void* arg){
 **************************************************/
 void button_task(void *args) {
 	button_event_t button_event;
-    int fire_but_level;
     TickType_t last_press_time = 0;
 
 	while(1){
@@ -234,54 +226,25 @@ void button_task(void *args) {
                 last_press_time = current_time;
                 
                 if(button_event.button_pin == FIRE_BUT){
-                    fire_but_level = 1;
-                    firing_buttons(fire_but_level);
-                    vTaskDelay(50 / portTICK_PERIOD_MS);
-                    fire_but_level = 0;
+                    //Turn on FIRE LED for 1 sec each time it is pressed 
+                    if (led_state == TRUE){
+                        gpio_set_level(FIRE_LED, 1);
+                        ESP_LOGI(TAG,"Fire Button Pressed");
+                        vTaskDelay(500 / portTICK_PERIOD_MS);
+                        gpio_set_level(FIRE_LED, 0);
+                    }
                 }
                 else if (button_event.button_pin == FW_BUT){
-                    fire_but_level = 2;
-                    firing_buttons(fire_but_level);
-                    vTaskDelay(50 / portTICK_PERIOD_MS);
-                    fire_but_level = 0;
+                    //Toggle Flywheel LED each time button is pushed
+                    led_state = !led_state;
+                    gpio_set_level(FW_LED, led_state);
+                    ESP_LOGI(TAG,"Flywheel Button Pressed");
                 }
-                fire_but_level = 0;
-                firing_buttons(fire_but_level);
             }
             //Send Button Press Data through ESPNOW
 			send_espnow_data();
-            
 		} 
 	}
-}
-
-/**************************************************
-* Title:	firing_buttons
-* Summary:	Function handles firing button presses and activates 
-            the Flywheels LED and the Busy Firing LED
-* Param:
-* Return:
-**************************************************/
-void firing_buttons(int fire_but_level){
-    //Toggle Flywheel LED each time button is pushed
-    if(fire_but_level == 2){
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-        led_state = !led_state;
-        gpio_set_level(FW_LED, led_state);
-        ESP_LOGI(TAG,"Flywheel Button Pressed");
-    }
-    //Turn on FIRE LED for 1 sec each time it is pressed 
-    if (led_state == TRUE){
-        if(fire_but_level == 1){
-            gpio_set_level(FIRE_LED, 1);
-            ESP_LOGI(TAG,"Fire Button Pressed");
-            vTaskDelay(500 / portTICK_PERIOD_MS);
-            gpio_set_level(FIRE_LED, 0);
-        }
-        else{
-            gpio_set_level(FIRE_LED, 0);
-        }
-    }
 }
 
 /**************************************************
@@ -355,7 +318,6 @@ void app_main(void){
     gpio_isr_handler_add(LB_BUT,   gpio_isr_handler, (void*) LB_BUT   );
     gpio_isr_handler_add(FIRE_BUT, gpio_isr_handler, (void*) FIRE_BUT );
     gpio_isr_handler_add(FW_BUT,   gpio_isr_handler, (void*) FW_BUT   );
-    gpio_isr_handler_add(TURRET_BUT,   gpio_isr_handler, (void*) TURRET_BUT   );
 
     //Initalize Status LEDs to off 
 	gpio_set_level(FIRE_LED, 0);

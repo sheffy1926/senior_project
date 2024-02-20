@@ -54,15 +54,6 @@ static EventGroupHandle_t s_evt_group;
 static void init_gpio(void);
 
 /**************************************************
-* Title:	firing_buttons
-* Summary:	Function handles firing button presses and activates 
-            the Flywheels LED and the Busy Firing LED
-* Param:
-* Return:
-**************************************************/
-void firing_buttons(int fire_but_level);
-
-/**************************************************
 * Title:	button_task
 * Summary:	Task handles GPIO button interrupts 
 * Param:

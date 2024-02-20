@@ -42,22 +42,20 @@
 #define FW_BUT 5
 #define FIRE_LED 25
 #define FW_LED 18
-#define TURRET_BUT 19
 
 //Firing Servo Variables
 #define SERVO_PWM_CHANNEL   	LEDC_CHANNEL_0
 #define SERVO_PWM_TIMER     	LEDC_TIMER_0
 #define DUTY_RESOLUTION 		8
 #define PWM_FREQUENCY      		50 	// Hz
-#define DUTY_MIN_FIRE       	8   // 5% duty cycle (0 degrees)
-#define DUTY_MAX_FIRE       	32  // 10% duty cycle (180 degrees)
+#define DUTY_MIN_FIRE       	8   // 8% duty cycle (0 degrees)
+#define DUTY_MAX_FIRE       	32  // 32% duty cycle (180 degrees)
 
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
-#define DUTY_RESOL 				10
-#define DUTY_MIN_TURRET       	8   // 5% duty cycle (0 degrees)
-#define DUTY_MAX_TURRET       	50  // 10% duty cycle (180 degrees)
+#define DUTY_MIN_TURRET       	8   // 8% duty cycle (0 degrees)
+#define DUTY_MAX_TURRET       	50  // 50% duty cycle (270 degrees?)
 //#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
 //#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
 //#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
@@ -80,10 +78,7 @@ typedef struct __attribute__((packed)) {
 	//commands to fire the turret
 	bool fire_turret;
 	bool activate_fw;
-	bool activate_turret;
-	//turret status messages
-	//bool turret_firing;
-	//bool fw_active;	
+	bool fw_led;
 
 	//uint8_t tank_id;
 } my_data_t;
