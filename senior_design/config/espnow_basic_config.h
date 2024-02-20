@@ -55,7 +55,9 @@
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_MIN_TURRET       	8   // 8% duty cycle (0 degrees)
-#define DUTY_MAX_TURRET       	50  // 50% duty cycle (270 degrees?)
+#define DUTY_1					16
+#define DUTY_2 					24
+#define DUTY_MAX_TURRET       	32  // 32% duty cycle (270 degrees)
 //#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
 //#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
 //#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees

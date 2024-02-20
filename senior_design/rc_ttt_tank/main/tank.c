@@ -129,8 +129,7 @@ void app_main(void){
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//init target tracking and turret rotation
-	/*firing_queue = xQueueCreate(1,sizeof(uint32_t));
-	turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
+	//turret_queue = xQueueCreate(8,sizeof(uint32_t));*/
 
 	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
     xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
