@@ -7,7 +7,7 @@
 #define LINK	1
 #define ZELDA	2
 //change this value to compile for different tank remote pairs
-#define TANK_REMOTE_PAIR ZELDA
+#define TANK_REMOTE_PAIR LINK
 
 #define ON 0
 #define OFF 1

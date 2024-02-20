@@ -52,19 +52,6 @@ void turret_task(void *pvParameter){
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
         }
-        if(rotate_turret == 0){
-            for(int i = 0; i < 2; i++){
-                // Rotate the turret back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-
-                // Rotate the turret forward (270 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MIN_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
-            }
-        }
 			// Move the servo from 0 to 270 degrees
            /*for (int degree = 0; degree <= SERVO_MAX_DEGREE; degree++) {
                 // Calculate duty cycle corresponding to the current degree
@@ -167,7 +154,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         ESP_LOGE(TAG, "Unexpected data length: %d != %u", len, sizeof(my_data_t));
         return;
     }
-
     //move the tank, activate flywheels or fire turret accordingly
 	my_data_t *packet = data; //!note this line generates a warning. it works fine though
 							  //because we checked the length above
