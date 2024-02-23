@@ -10,6 +10,8 @@ static uint32_t rotate_turret = 0;
 /**************************************************
 * Title:	turret_task
 * Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
+            from the IR Detectors based on if they are receiving IR light or not
+            from the other tank's emitters. 
 * Param:
 * Return:
 **************************************************/
@@ -157,18 +159,20 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
 	} 
     else if(packet->message_type == TANK_COMMAND){
-        //Driving Button Monitoring
+        //Driving Buttons Activation
         gpio_set_level(RF_IN2_PIN, packet->rf);
         gpio_set_level(RB_IN1_PIN, packet->rb);
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
-        //Flywheel Button Monitoring - Toggle FW LED
+        //Flywheel Button Toggling - Toggle FW LED
         gpio_set_level(FW_PIN, packet->fw_led);
         
         //Right Forward Motion
 		/*if (packet->rf == 1){
 			ESP_LOGI(TAG, "Right Forward Activated");
-			for (int duty = 0; duty <= 1023; duty += 100) {
+			for (int duty = 0; duty <= 1000; duty += 100) {
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, DRIVING_PWM_CHANNEL, duty);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, DRIVING_PWM_CHANNEL);
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
             }
 		}*/
@@ -191,10 +195,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
                     rotate_turret = 0;
                 }
             }
-            //else{
-                //fire_servo = 0;
-               // rotate_turret = 0;
-           // }
+            /*else{
+                fire_servo = 0;
+                rotate_turret = 0;
+            }*/
         }
         /********************************************************************/
     }
@@ -215,7 +219,7 @@ esp_err_t send_espnow_data(void){
     //populate data
 	/*data.message_type = FIRE_COMMAND;
 	data.fw_active = !(gpio_get_level(FW_PIN));
-	data.turret_firing = !(gpio_get_level(FIRE_PIN));*/
+	data.firing_led = !(gpio_get_level(FIRE_PIN));
 
     // Convert MAC address to string
     char mac_str[18];
@@ -224,7 +228,7 @@ esp_err_t send_espnow_data(void){
              destination_mac[3], destination_mac[4], destination_mac[5]);
 
     // Log the MAC address we are sending data to
-    ESP_LOGI(TAG, "Send Tank data to MAC: %s", mac_str);
+    ESP_LOGI(TAG, "Send Tank data to MAC: %s", mac_str);*/
 
     // Send it
     esp_err_t err = esp_now_send(destination_mac, (uint8_t*)&data, sizeof(data));
