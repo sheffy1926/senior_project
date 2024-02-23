@@ -8,18 +8,17 @@
  *  reconfigure firing input to activate firing servo motor and then turn its position to start each time (PWM Signal)
  *  Once test configuration works, pass PWM signal from remote to provide acceleration curve for the motors 
  *  3D Designed Firing Mechanism, Magazine Holder
+ *  Research IR Sensors and Emitters
  * Tank TODO List:
- * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor? 
- * 	2: Research IR Sensors and Emitters
- * 	3: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
- * 	4: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
- * 	5: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	6: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
+ * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor
+ * 	2: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
+ * 	3: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
+ * 	4: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
+ * 	5: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
  * 
- * 	3D Design the Tank's Base, Shell, Turret Connection ,Barrel, Turret Base 
+ * 	3D Design the Tank's Base, Shell, Turret Connection, Barrel, Turret Base 
  * 	Design Custom PCB for Tank 
- * 	Buy more components to have all of the necessary parts to complete the tank except maybe the nerf gun, 
- * 		transistors and the target tracking sensors/emitters, maybe buy more 3D filament 
+ * 	Buy more components to have all of the necessary parts to complete the tank maybe buy more 3D filament 
 ****************************************************/
 
 #include <stdlib.h>
@@ -48,7 +47,7 @@
 #include "espnow_basic_config.h"
 
 //| (1ULL<<IR_EMIT)
-#define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_SERVO_PIN))
+#define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_PIN))
 //#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7))
 static const char *TAG = "tank";
 

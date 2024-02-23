@@ -22,16 +22,17 @@
 #define LF_IN3_PIN 19
 #define LB_IN4_PIN 21 
 #define TURRET_PIN 13
-#define FIRE_SERVO_PIN 15 
+#define FIRE_PIN 15 
 #define FW_PIN 12
 /* #define IR_S_1 14
-#define IR_S_2 27
+#define IR_S_2 25
 #define IR_S_3 26
-#define IR_S_4 25
-#define IR_S_5 33
-#define IR_S_6 32
+#define IR_S_4 27
+#define IR_S_5 32
+#define IR_S_6 33
 #define IR_S_7 35
-#define IR_EMIT 4 */
+#define IR_EMITS 22 
+#define IR_S_NMOS 23 */
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12

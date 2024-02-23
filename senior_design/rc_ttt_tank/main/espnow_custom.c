@@ -87,7 +87,7 @@ void turret_task(void *pvParameter){
 * Return:
 **************************************************/
 void firing_task(void *pvParameter) {
-    esp_rom_gpio_pad_select_gpio(FIRE_SERVO_PIN);
+    esp_rom_gpio_pad_select_gpio(FIRE_PIN);
 
     ledc_timer_config_t timer_conf0;
     timer_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
@@ -97,7 +97,7 @@ void firing_task(void *pvParameter) {
     ledc_timer_config(&timer_conf0);
 
     ledc_channel_config_t ledc_conf0;
-    ledc_conf0.gpio_num = FIRE_SERVO_PIN;
+    ledc_conf0.gpio_num = FIRE_PIN;
     ledc_conf0.speed_mode = LEDC_HIGH_SPEED_MODE;
     ledc_conf0.channel = SERVO_PWM_CHANNEL;
     ledc_conf0.intr_type = LEDC_INTR_DISABLE;
