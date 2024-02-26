@@ -31,7 +31,7 @@
 #define IR_S_5 32
 #define IR_S_6 33
 #define IR_S_7 35
-#define IR_EMITS 22 
+#define IR_EMITS_NMOS 22 
 #define IR_S_NMOS 23 */
 
 //Remote Pins for Buttons and LEDs
