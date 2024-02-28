@@ -6,5 +6,4 @@ sdkconfig.old
 esp-idf/
 tank_pcb/pinHeaders
 tank_pcb/2N7002LT1G
-tank_pcb/tank_pcb/tank_pcb-backups
-tank_pcb/tank_pcb/fp-info-cache
+tank_pcb/tank_pcb
