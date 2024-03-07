@@ -46,10 +46,11 @@
 #include "sdkconfig.h"
 #include "espnow_basic_config.h"
 
-//| (1ULL<<IR_EMIT)
-#define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_PIN))
-//#define IN_PIN_SEL ( (1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7))
+//| (1ULL<<IR_EMITS_NMOS) | (1ULL<<IR_S_NMOS)
+#define OUT_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN) | (1ULL<<TURRET_PIN) | (1ULL<<FW_PIN) | (1ULL<<FIRE_PIN) | (1ULL<<IR_EMIT))
+//#define IN_PIN_SEL ((1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7))
 static const char *TAG = "tank";
+adc_oneshot_unit_handle_t adc2_handle;
 
 /**************************************************
 * Title:	target_tracking_task
@@ -58,12 +59,36 @@ static const char *TAG = "tank";
 * Param:
 * Return:
 **************************************************/
-/*void target_tracking_task(void *pvParameter){
+void target_tracking_task(void *pvParameter) {
+    int s1_raw = 0;
+    float s1_v = 0;
 
-	while(1){
+    // Configure ADC
+    adc_oneshot_chan_cfg_t config = {
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTEN_DB_0,
+    };
 
-	}
-}*/
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_6, &config));
+    gpio_set_level(IR_EMIT,1); //Turn IR Emitter on 
+
+    while (1) {
+        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
+        s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+        ESP_LOGI(TAG, "ADC2 Channel[6] Raw Data: %d, Voltage: %f", s1_raw, s1_v);
+
+        //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
+
+        // Read ADC value from IR_S_1
+       // sv_1 = adc2_get_raw(ADC2_CHANNEL_6);
+
+        // Print the ADC value to esp_log
+        //ESP_LOGI("target_tracking_task", "ADC Value (IR_S_1): %d", sv_1);
+
+        // Delay for 0.5 seconds
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+}
 
 /**************************************************
 * Title: config_gpio_pins
@@ -87,11 +112,11 @@ void config_gpio_pins(void){
     //configure output GPIO pins with the given settings
     gpio_config(&o_conf);
 
-    /*gpio_config_t i_conf = {};
+    gpio_config_t i_conf = {};
     //disable interrupt
     i_conf.intr_type = GPIO_INTR_DISABLE;
     //bit mask of the pins
-    i_conf.pin_bit_mask = TURRET_BUT;
+    i_conf.pin_bit_mask = IR_S_1;
     //set as input mode
     i_conf.mode = GPIO_MODE_INPUT;
     //enable pull-up mode
@@ -99,7 +124,7 @@ void config_gpio_pins(void){
     //interrupt on both edges
     i_conf.intr_type = GPIO_INTR_ANYEDGE;	
     //configure input GPIO pins with the given settings
-    gpio_config(&i_conf);*/
+    gpio_config(&i_conf);
 
 	//Initialize gpio pins to off
 	gpio_set_level(FW_PIN, 0);
@@ -107,16 +132,22 @@ void config_gpio_pins(void){
     gpio_set_level(RF_IN2_PIN, 0);
 	gpio_set_level(LF_IN3_PIN, 0);
     gpio_set_level(LB_IN4_PIN, 0);
+    gpio_set_level(IR_EMIT, 0);
+}
 
-	//configure input GPIO pins (IR Sensors)
-	/*gpio_reset_pin(IN_PIN_SEL);
-	gpio_set_pull_mode(IN_PIN_SEL,GPIO_PULLUP_ONLY);
-	gpio_set_direction(IN_PIN_SEL,GPIO_MODE_INPUT);*/
+void adc_init(){
+    adc_oneshot_unit_init_cfg_t init_config2 = {
+        .unit_id = ADC_UNIT_2,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config2, &adc2_handle));
 }
 
 void app_main(void){
 	//Set up gpio pins to correct modes
     config_gpio_pins();
+    //Initialize ADCs
+    adc_init();
 
 	// for some reason just having this makes it faster
 	//!note I would prefer not to have it
@@ -132,7 +163,7 @@ void app_main(void){
 
 	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
     xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
-	//xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 3, NULL);
+	xTaskCreate(target_tracking_task, "target_tracking_task", 2048, NULL, 5, NULL);
 
 	while(1){
 		vTaskDelay(750 / portTICK_PERIOD_MS);

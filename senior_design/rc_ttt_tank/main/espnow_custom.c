@@ -166,6 +166,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LB_IN4_PIN, packet->lb);
         //Flywheel Button Toggling - Toggle FW LED
         gpio_set_level(FW_PIN, packet->fw_led);
+        gpio_set_level(FIRE_PIN, packet->fire_turret);
         
         //Right Forward Motion
 		/*if (packet->rf == 1){

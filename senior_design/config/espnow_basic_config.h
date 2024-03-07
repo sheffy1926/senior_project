@@ -24,8 +24,10 @@
 #define TURRET_PIN 13
 #define FIRE_PIN 15 
 #define FW_PIN 12
-/* #define IR_S_1 14
-#define IR_S_2 25
+
+#define IR_EMIT 22 //Temp IR LED GPIO Pin
+#define IR_S_1 14
+/*#define IR_S_2 25
 #define IR_S_3 26
 #define IR_S_4 27
 #define IR_S_5 32
@@ -62,6 +64,12 @@
 //#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
 //#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
 //#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
+
+#define ADC_WIDTH    ADC_WIDTH_BIT_12
+#define ADC_ATTEN    ADC_ATTEN_DB_0 // Attenuation level for ADC
+#define DEFAULT_VREF    1100        // Default voltage reference (millivolts)
+#define ADC_MAX_VALUE 4095
+#define MAX_VOLTAGE 3.3
 
 //message types
 #define TANK_COMMAND  	1
