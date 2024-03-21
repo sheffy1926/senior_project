@@ -110,4 +110,6 @@ void init_espnow_slave(void);
 **************************************************/
 void config_gpio_pins(void);
 
+void adc_init();
+
 #endif //ESP_NOW_CUSTOM_H

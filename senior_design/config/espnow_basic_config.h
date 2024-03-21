@@ -7,7 +7,7 @@
 #define LINK	1
 #define ZELDA	2
 //change this value to compile for different tank remote pairs
-#define TANK_REMOTE_PAIR LINK
+#define TANK_REMOTE_PAIR ZELDA
 
 #define ON 0
 #define OFF 1
@@ -17,34 +17,34 @@
 
 //Tank Pins for Motors, Firing Mechanism, Flywheels, 
 //PWM Signals, IR Sensors & Emitters
-#define RB_IN1_PIN 5
-#define RF_IN2_PIN 18
-#define LF_IN3_PIN 19
-#define LB_IN4_PIN 21 
-#define TURRET_PIN 13
-#define FIRE_PIN 15 
-#define FW_PIN 12
+#define TEST_LED 4			//Test LED Pin If Needed
+#define RB_IN1_PIN 5		//Right Back Pin
+#define RF_IN2_PIN 18		//Right Forward Pin
+#define LF_IN3_PIN 19		//Left Forward Pin
+#define LB_IN4_PIN 21 		//Left Back Pin
+#define TURRET_PIN 13		//Turret Servo Motor Pin
+#define FIRE_PIN 15 		//Firing Mechanism Servo Motor Pin 
+#define FW_NMOS 12			//Pin to activate Flywheels NMOS Low-Side Switch
 
-#define IR_EMIT 22 //Temp IR LED GPIO Pin
-#define IR_S_1 14
-/*#define IR_S_2 25
-#define IR_S_3 26
-#define IR_S_4 27
-#define IR_S_5 32
-#define IR_S_6 33
-#define IR_S_7 35
-#define IR_EMITS_NMOS 22 
-#define IR_S_NMOS 23 */
+#define IR_EMITS_NMOS 22 	//Pin to activate Emitters NMOS Low-Side Switch
+#define IR_S_NMOS 23		//Pin to activate Detectors NMOS Low-Side Switch
+#define IR_S_1 14 			//ADC 2_6
+#define IR_S_2 25 			//ADC 2_8
+#define IR_S_3 26 			//ADC 2_9
+#define IR_S_4_CENTER 27 	//ADC 2_7
+#define IR_S_5 32 			//ADC 1_4
+#define IR_S_6 33 			//ADC 1_5
+#define IR_S_7 35 			//ADC 1_7
 
 //Remote Pins for Buttons and LEDs
-#define RF_BUT 12
-#define RB_BUT 13
-#define LF_BUT 15
-#define LB_BUT 4
-#define FIRE_BUT 14
-#define FW_BUT 5
-#define FIRE_LED 25
-#define FW_LED 18
+#define RF_BUT 12			//Right Forward Driving Button
+#define RB_BUT 13			//Right Back Driving Button
+#define LF_BUT 15			//Left Forward Driving Button
+#define LB_BUT 4			//Left Back Driving Button
+#define FIRE_BUT 14			//Activate Firing Mechanism Button
+#define FW_BUT 5			//Toggle Flywheels Button
+#define FIRE_LED 25			//Firing Status LED Pin
+#define FW_LED 18			//Flywheel Status LED Pin
 
 //Firing Servo Variables
 #define SERVO_PWM_CHANNEL   	LEDC_CHANNEL_0
@@ -52,24 +52,25 @@
 #define DUTY_RESOLUTION 		8
 #define PWM_FREQUENCY      		50 	// Hz
 #define DUTY_MIN_FIRE       	8   // 8% duty cycle (0 degrees)
-#define DUTY_MAX_FIRE       	32  // 32% duty cycle (180 degrees)
+#define DUTY_MAX_FIRE       	20  // 20% duty cycle (90 degrees on this servo)
 
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_MIN_TURRET       	8   // 8% duty cycle (0 degrees)
-#define DUTY_1					16
-#define DUTY_2 					24
+#define DUTY_1					16	// 16% duty cycle (90 degrees)
+#define DUTY_CENTER				20	// 20% duty cycle (120 degrees - Centered)
+#define DUTY_2 					24	// 24% duty cycle (180 degrees) 
 #define DUTY_MAX_TURRET       	32  // 32% duty cycle (270 degrees)
 //#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
 //#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
 //#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
 
-#define ADC_WIDTH    ADC_WIDTH_BIT_12
-#define ADC_ATTEN    ADC_ATTEN_DB_0 // Attenuation level for ADC
-#define DEFAULT_VREF    1100        // Default voltage reference (millivolts)
-#define ADC_MAX_VALUE 4095
-#define MAX_VOLTAGE 3.3
+//#define ADC_WIDTH    	ADC_WIDTH_BIT_12
+#define ADC_ATTEN    	ADC_ATTEN_DB_0 // Attenuation level for ADC
+//#define DEFAULT_VREF    1100        // Default voltage reference (millivolts)
+#define ADC_MAX_VALUE 	4095
+#define MAX_VOLTAGE 	3.3
 
 //message types
 #define TANK_COMMAND  	1
@@ -85,13 +86,10 @@ typedef struct __attribute__((packed)) {
     bool rb;
     bool lf;
     bool lb;
-	
 	//commands to fire the turret
 	bool fire_turret;
 	bool activate_fw;
 	bool fw_led;
-
-	//uint8_t tank_id;
 } my_data_t;
 
 //LINK

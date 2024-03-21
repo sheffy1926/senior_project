@@ -66,11 +66,21 @@ void turret_task(void *pvParameter){
                 vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
             }
         }
+        else if(rotate_turret == 4){
+			ESP_LOGI(TAG, "Turret Servo Activated 3");
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+            for(int i = 0; i < 2; i++){
+                //Rotate the servo forward (180 degrees)
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
+                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
+            }
+        }
         else if (rotate_turret == 0){
             ESP_LOGI(TAG, "Turret Servo Activated 0");
             for(int i = 0; i < 2; i++){
                 //Rotate the servo back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
+                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_CENTER);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
@@ -122,6 +132,7 @@ void firing_task(void *pvParameter) {
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
                 vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
             }
+            fire_servo = 0;
         }
     }
 }
@@ -157,6 +168,15 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 
 	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
+        //Driving Buttons deactivation
+        gpio_set_level(RF_IN2_PIN, 0);
+        gpio_set_level(RB_IN1_PIN, 0);
+        gpio_set_level(LF_IN3_PIN, 0);
+        gpio_set_level(LB_IN4_PIN, 0);
+        //Flywheel Button Toggling - Toggle FW LED
+        gpio_set_level(FW_NMOS, 0);
+        gpio_set_level(FIRE_PIN, 0);
+
 	} 
     else if(packet->message_type == TANK_COMMAND){
         //Driving Buttons Activation
@@ -165,25 +185,18 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
         //Flywheel Button Toggling - Toggle FW LED
-        gpio_set_level(FW_PIN, packet->fw_led);
+        gpio_set_level(FW_NMOS, packet->fw_led);
         gpio_set_level(FIRE_PIN, packet->fire_turret);
         
-        //Right Forward Motion
-		/*if (packet->rf == 1){
-			ESP_LOGI(TAG, "Right Forward Activated");
-			for (int duty = 0; duty <= 1000; duty += 100) {
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, DRIVING_PWM_CHANNEL, duty);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, DRIVING_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust acceleration
-            }
-		}*/
         /********************************************************************/
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
         if(packet->fw_led == 1){
+            gpio_set_level(IR_EMITS_NMOS,1); //Turn IR Emitters on 
+            gpio_set_level(IR_S_NMOS,1); //Turn IR Detectors on 
             if(packet->fire_turret == 1){
-                //fire_servo = 1;
-                if (rotate_turret == 0){
+                fire_servo = 1;
+               /* if (rotate_turret == 0){
                     rotate_turret = 1;
                 }
                 else if (rotate_turret == 1){
@@ -194,14 +207,15 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
                 }
                 else if (rotate_turret == 3){
                     rotate_turret = 0;
-                }
+                }*/
             }
-            /*else{
+            else{
+                gpio_set_level(IR_EMITS_NMOS,0); //Turn IR Emitters off
+                gpio_set_level(IR_S_NMOS,0); //Turn IR Detectors off
                 fire_servo = 0;
                 rotate_turret = 0;
-            }*/
+            }
         }
-        /********************************************************************/
     }
 	return;
 }
@@ -219,7 +233,7 @@ esp_err_t send_espnow_data(void){
 
     //populate data
 	/*data.message_type = FIRE_COMMAND;
-	data.fw_active = !(gpio_get_level(FW_PIN));
+	data.fw_active = !(gpio_get_level(FW_NMOS));
 	data.firing_led = !(gpio_get_level(FIRE_PIN));
 
     // Convert MAC address to string
