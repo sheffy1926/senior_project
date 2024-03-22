@@ -7,7 +7,7 @@
 #define LINK	1
 #define ZELDA	2
 //change this value to compile for different tank remote pairs
-#define TANK_REMOTE_PAIR ZELDA
+#define TANK_REMOTE_PAIR LINK 
 
 #define ON 0
 #define OFF 1
@@ -57,11 +57,7 @@
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
-#define DUTY_MIN_TURRET       	8   // 8% duty cycle (0 degrees)
-#define DUTY_1					16	// 16% duty cycle (90 degrees)
-#define DUTY_CENTER				20	// 20% duty cycle (120 degrees - Centered)
-#define DUTY_2 					24	// 24% duty cycle (180 degrees) 
-#define DUTY_MAX_TURRET       	32  // 32% duty cycle (270 degrees)
+#define DUTY_CENTER				26	// 20% duty cycle (120 degrees - Centered)
 //#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
 //#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
 //#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
@@ -74,7 +70,6 @@
 
 //message types
 #define TANK_COMMAND  	1
-//#define FIRE_COMMAND  	2
 
 // Define the structure of your data
 typedef struct __attribute__((packed)) {

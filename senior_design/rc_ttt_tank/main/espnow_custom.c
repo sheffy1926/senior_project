@@ -5,7 +5,8 @@ static const char *TAG = "tank_espnow_custom";
 
 //static uint32_t fw_state = 0;
 static uint32_t fire_servo = 0;
-static uint32_t rotate_turret = 0;
+static uint32_t rotate_turret = 4;
+static uint32_t rotation_angle[7] = {8,14,20,25,28,30,32}; //min = 8, max = 32
 
 /**************************************************
 * Title:	turret_task
@@ -36,55 +37,14 @@ void turret_task(void *pvParameter){
 
     while (1) {
         //Rotate the turret servo if IR sensors detect target tank in range 
-        if(rotate_turret == 1){
-			ESP_LOGI(TAG, "Turret Servo Activated 1");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MIN_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
+        //ESP_LOGI(TAG, "Turret Servo Activated");
+        for(int i = 0; i < 2; i++){
+            //Rotate the servo forward (180 degrees)
+            ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, rotation_angle[rotate_turret]);
+            ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+            vTaskDelay(250 / portTICK_PERIOD_MS); // Wait for 0.25 seconds
         }
-        else if(rotate_turret == 2){
-			ESP_LOGI(TAG, "Turret Servo Activated 2");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_1);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
-        }
-        else if(rotate_turret == 3){
-			ESP_LOGI(TAG, "Turret Servo Activated 3");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_2);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
-        }
-        else if(rotate_turret == 4){
-			ESP_LOGI(TAG, "Turret Servo Activated 3");
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_MAX_TURRET);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
-        }
-        else if (rotate_turret == 0){
-            ESP_LOGI(TAG, "Turret Servo Activated 0");
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo back to the starting position (0 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, DUTY_CENTER);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(10 / portTICK_PERIOD_MS); // Wait for 10 milliseconds
-            }
-        }
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
 	}
 }
 
@@ -134,6 +94,7 @@ void firing_task(void *pvParameter) {
             }
             fire_servo = 0;
         }
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
     }
 }
 
@@ -168,15 +129,14 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 
 	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
-        //Driving Buttons deactivation
+        //Flywheel Button Toggling - Toggle FW LED
+        gpio_set_level(FW_NMOS, 0);
+        gpio_set_level(FIRE_PIN, 0);
+        //If no message was received turn off the driving pins 
         gpio_set_level(RF_IN2_PIN, 0);
         gpio_set_level(RB_IN1_PIN, 0);
         gpio_set_level(LF_IN3_PIN, 0);
         gpio_set_level(LB_IN4_PIN, 0);
-        //Flywheel Button Toggling - Toggle FW LED
-        gpio_set_level(FW_NMOS, 0);
-        gpio_set_level(FIRE_PIN, 0);
-
 	} 
     else if(packet->message_type == TANK_COMMAND){
         //Driving Buttons Activation
@@ -184,36 +144,29 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(RB_IN1_PIN, packet->rb);
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
-        //Flywheel Button Toggling - Toggle FW LED
-        gpio_set_level(FW_NMOS, packet->fw_led);
-        gpio_set_level(FIRE_PIN, packet->fire_turret);
-        
-        /********************************************************************/
+
+        gpio_set_level(FW_NMOS, packet->fw_led);         //Flywheel Button Toggling - Toggle FW LED
+        gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
+        gpio_set_level(IR_S_NMOS, packet->fw_led);       //Turn IR Detectors on/off
+        gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism
+
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
         if(packet->fw_led == 1){
-            gpio_set_level(IR_EMITS_NMOS,1); //Turn IR Emitters on 
-            gpio_set_level(IR_S_NMOS,1); //Turn IR Detectors on 
             if(packet->fire_turret == 1){
-                fire_servo = 1;
-               /* if (rotate_turret == 0){
-                    rotate_turret = 1;
-                }
-                else if (rotate_turret == 1){
-                    rotate_turret = 2;
-                }
-                else if (rotate_turret == 2){
-                    rotate_turret = 3;
-                }
-                else if (rotate_turret == 3){
+                //fire_servo = 1;
+                if (rotate_turret >= 7){
                     rotate_turret = 0;
-                }*/
+                }
+                else {
+                    rotate_turret++;
+                }
+                vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
             }
-            else{
-                gpio_set_level(IR_EMITS_NMOS,0); //Turn IR Emitters off
-                gpio_set_level(IR_S_NMOS,0); //Turn IR Detectors off
-                fire_servo = 0;
-                rotate_turret = 0;
+            else {
+                //gpio_set_level(IR_EMITS_NMOS,0);  //Turn IR Emitters off
+                //gpio_set_level(IR_S_NMOS,0);      //Turn IR Detectors off
+                //fire_servo = 0;
             }
         }
     }

@@ -110,6 +110,12 @@ void init_espnow_slave(void);
 **************************************************/
 void config_gpio_pins(void);
 
+/**************************************************
+* Title: adc_init
+* Summary: initialize adc channels
+* Param:
+* Return:
+**************************************************/
 void adc_init();
 
 #endif //ESP_NOW_CUSTOM_H

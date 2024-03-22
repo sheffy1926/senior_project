@@ -63,18 +63,18 @@ adc_oneshot_unit_handle_t adc2_handle;
 void target_tracking_task(void *pvParameter) {
     int s1_raw;
     float s1_v;
-    int s2_raw;
+    /*int s2_raw;
     float s2_v;
     int s3_raw;
-    float s2_v;
+    float s3_v;*/
     int s4_center_raw;
     float s4_center_v;
-    int s5_raw;
+    /*int s5_raw;
     float s5_v;
     int s6_raw;
     float s6_v;
     int s7_raw;
-    float s7_v;
+    float s7_v;*/
 
     // Configure ADC
     adc_oneshot_chan_cfg_t config = {
@@ -92,7 +92,7 @@ void target_tracking_task(void *pvParameter) {
 
     while (1) {
         // Read ADC value from IR_S_1
-        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
+        /*ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
         //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
         s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
         // Print the ADC value to esp_log
@@ -106,10 +106,10 @@ void target_tracking_task(void *pvParameter) {
         //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
         s4_center_v = (s4_center_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
         // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);
+        ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);*/
 
         // Delay for 0.5 seconds
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -180,7 +180,6 @@ void adc_init(){
         .unit_id = ADC_UNIT_1,
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
-
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
 
     adc_oneshot_unit_init_cfg_t init_config2 = {
@@ -211,6 +210,6 @@ void app_main(void){
 	xTaskCreate(target_tracking_task, "target_tracking_task", 1024, NULL, 5, NULL);
 
 	while(1){
-		vTaskDelay(750 / portTICK_PERIOD_MS);
+		vTaskDelay(250 / portTICK_PERIOD_MS);
 	}
 }
