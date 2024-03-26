@@ -96,8 +96,7 @@ void target_tracking_task(void *pvParameter) {
         //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
         s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
         // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);
-
+        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);*/
         // Delay for 0.5 seconds
         vTaskDelay(500 / portTICK_PERIOD_MS);
 
@@ -106,9 +105,8 @@ void target_tracking_task(void *pvParameter) {
         //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
         s4_center_v = (s4_center_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
         // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);*/
+        ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);
 
-        // Delay for 0.5 seconds
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

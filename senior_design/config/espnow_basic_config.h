@@ -57,10 +57,7 @@
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
-#define DUTY_CENTER				26	// 20% duty cycle (120 degrees - Centered)
-//#define SERVO_MIN_PULSEWIDTH   	550  // Minimum pulse width in microseconds
-//#define SERVO_MAX_PULSEWIDTH   	2450 // Maximum pulse width in microseconds
-//#define SERVO_MAX_DEGREE       	270  // Maximum angle in degrees
+#define DUTY_CENTER				22	// 22% duty cycle (120 degrees - Centered)
 
 //#define ADC_WIDTH    	ADC_WIDTH_BIT_12
 #define ADC_ATTEN    	ADC_ATTEN_DB_0 // Attenuation level for ADC
