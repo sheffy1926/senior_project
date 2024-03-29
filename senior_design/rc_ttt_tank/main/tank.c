@@ -13,10 +13,10 @@
  * 	Design Custom PCB for Tank
  * Tank TODO List:
  * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor
- * 	2: Once Target Tracking Method is determined and ordered write code to power emitters and sensors
- * 	3: Configure IR Sensors to detect IR Emitter output (Hopefully using analog IR sensors not digital)
+ * 	2: Write code to power emitters and sensors
+ * 	3: Configure IR Sensors to detect IR Emitter output
  * 	4: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	5: Apple this detection sensing into rotational position and send PWM signal to turret motor to rotate
+ * 	5: Apply this detection sensing into rotational position and send PWM signal to turret motor to rotate
  *  
  * 	Buy more components to have all of the necessary parts to complete the tank maybe buy more 3D filament 
 ****************************************************/
@@ -40,7 +40,12 @@
 #include "esp_now.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
-#include "esp_adc/adc_oneshot.h"
+//#include "esp_adc/adc_oneshot.h"
+//#include "esp_adc/adc_continous.h"
+#include "driver/adc.h"
+#include <esp_adc_cal.h>
+//#include esp_adc/adc_cali.h 
+//#include esp_adc/adc_cali_scheme.h"
 
 #include "espnow_custom.h"
 #include "sdkconfig.h"
@@ -50,8 +55,6 @@
 #define OUT_PIN_SEL ((1ULL<<TURRET_PIN) | (1ULL<<FW_NMOS) | (1ULL<<FIRE_PIN) | (1ULL<<IR_EMITS_NMOS) | (1ULL<<IR_S_NMOS));
 #define IN_PIN_SEL ((1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4_CENTER) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7));
 static const char *TAG = "tank";
-adc_oneshot_unit_handle_t adc1_handle;
-adc_oneshot_unit_handle_t adc2_handle;
 
 /**************************************************
 * Title:	target_tracking_task
@@ -66,10 +69,10 @@ void target_tracking_task(void *pvParameter) {
     /*int s2_raw;
     float s2_v;
     int s3_raw;
-    float s3_v;*/
+    float s3_v;
     int s4_center_raw;
     float s4_center_v;
-    /*int s5_raw;
+    int s5_raw;
     float s5_v;
     int s6_raw;
     float s6_v;
@@ -77,7 +80,7 @@ void target_tracking_task(void *pvParameter) {
     float s7_v;*/
 
     // Configure ADC
-    adc_oneshot_chan_cfg_t config = {
+    /*adc_oneshot_chan_cfg_t config = {
         .bitwidth = ADC_BITWIDTH_DEFAULT,
         .atten = ADC_ATTEN_DB_0,
     };
@@ -88,15 +91,15 @@ void target_tracking_task(void *pvParameter) {
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_7, &config));
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_4, &config));
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_5, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_7, &config));
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_7, &config));*/
 
-    while (1) {
+    /*while (1) {
         // Read ADC value from IR_S_1
-        /*ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
+        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
         //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
         s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
         // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);*/
+        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);
         // Delay for 0.5 seconds
         vTaskDelay(500 / portTICK_PERIOD_MS);
 
@@ -107,8 +110,20 @@ void target_tracking_task(void *pvParameter) {
         // Print the ADC value to esp_log
         ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);
 
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        //vTaskDelay(10 / portTICK_PERIOD_MS);
+    }*/
+
+    while (1) {
+        // Read ADC value from IR Photodiode
+        s1_raw = adc1_get_raw(ADC1_CHANNEL_4);
+        //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
+        s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+        // Print the ADC value to esp_log
+        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);
+        // Delay for 0.5 seconds
+        vTaskDelay(500 / portTICK_PERIOD_MS);
     }
+
 }
 
 /**************************************************
@@ -174,17 +189,17 @@ void config_gpio_pins(void){
 }
 
 void adc_init(){
-    adc_oneshot_unit_init_cfg_t init_config1 = {
-        .unit_id = ADC_UNIT_1,
-        .ulp_mode = ADC_ULP_MODE_DISABLE,
-    };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
-
-    adc_oneshot_unit_init_cfg_t init_config2 = {
-        .unit_id = ADC_UNIT_2,
-        .ulp_mode = ADC_ULP_MODE_DISABLE,
-    };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config2, &adc2_handle));
+    // Configure ADC 2
+    adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_1
+    adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_DB_11); //IR_S_2
+    adc2_config_channel_atten(ADC2_CHANNEL_9, ADC_ATTEN_DB_11); //IR_S_3
+    adc2_config_channel_atten(ADC2_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_4
+    // Configure ADC 1
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_4, ADC_ATTEN_DB_11); //IR_S_5
+    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_6
+    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_7
+    gpio_set_level(IR_EMITS_NMOS, 1);   //Turn IR Emitters on/off
 }
 
 void app_main(void){
@@ -193,7 +208,7 @@ void app_main(void){
     //Initialize ADCs
     adc_init();
 
-	// for some reason just having this makes it faster
+	//for some reason just having this makes it faster
 	//!note I would prefer not to have it
     s_evt_group = xEventGroupCreate();
     assert(s_evt_group);
@@ -203,8 +218,8 @@ void app_main(void){
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//init target tracking, turret rotation, firing task
-	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
-    xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
+	//xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
+    //xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
 	xTaskCreate(target_tracking_task, "target_tracking_task", 1024, NULL, 5, NULL);
 
 	while(1){

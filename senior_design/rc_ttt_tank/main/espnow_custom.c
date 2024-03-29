@@ -16,7 +16,7 @@ static uint32_t angle = 0;
 * Param:
 * Return:
 **************************************************/
-void turret_task(void *pvParameter){
+/*void turret_task(void *pvParameter){
 
     ledc_timer_config_t timer_conf1;
     timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
@@ -37,6 +37,7 @@ void turret_task(void *pvParameter){
 
     //static uint32_t rotation_angle[7] = {10,14,18,22,26,29,32}; //min = 10, max = 32
     static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
+    //static uint32_t rotation_angle[11] = {12,14,16,18,20,22,24,26,28,30,32}; //min = 10, max = 32
  
     while (1) {
         //Rotate the turret servo if IR sensors detect target tank in range 
@@ -51,7 +52,7 @@ void turret_task(void *pvParameter){
             }
             angle++;
         }
-        /*else {
+        else {
             //ESP_LOGI(TAG, "Turret Servo Activated");
             vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
             for(int i = 0; i < 2; i++){
@@ -60,14 +61,14 @@ void turret_task(void *pvParameter){
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
                 vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.25 seconds
             }
-        }*/
+        }
         //Reset angle counter
         if (angle >= 11){
             angle = 0;
         }
         vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
 	}
-}
+}*/
 
 /**************************************************
 * Title:	firing_task
@@ -77,7 +78,7 @@ void turret_task(void *pvParameter){
 * Param:
 * Return:
 **************************************************/
-void firing_task(void *pvParameter) {
+/*void firing_task(void *pvParameter) {
     esp_rom_gpio_pad_select_gpio(FIRE_PIN);
 
     ledc_timer_config_t timer_conf0;
@@ -117,7 +118,7 @@ void firing_task(void *pvParameter) {
         }
         vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
     }
-}
+}*/
 
 /**************************************************
 * Title:	recv_cb
@@ -162,8 +163,8 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
 
-        gpio_set_level(FW_NMOS, packet->fw_led);         //Flywheel Button Toggling - Toggle FW LED
-        gpio_set_level(IR_S_NMOS, packet->fw_led);       //Turn IR Detectors on/off
+        //gpio_set_level(FW_NMOS, packet->fw_led);         //Flywheel Button Toggling - Toggle FW LED
+        //gpio_set_level(IR_S_NMOS, packet->fw_led);       //Turn IR Detectors on/off
         gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
         gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism
 
@@ -172,7 +173,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         if(packet->fw_led == 1){
             if(packet->fire_turret == 1){
                 //fire_servo = 1;
-                rotate_turret = 1;
+                //rotate_turret = 1;
                 vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
             }
             else {
@@ -181,8 +182,8 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
             }
         }
         else if (packet->fw_led == 0){
-            rotate_turret = 0;
-            angle = 6;
+            //rotate_turret = 0;
+            //angle = 5;
         }
     }
 	return;

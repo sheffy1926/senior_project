@@ -7,7 +7,7 @@
 #define LINK	1
 #define ZELDA	2
 //change this value to compile for different tank remote pairs
-#define TANK_REMOTE_PAIR LINK 
+#define TANK_REMOTE_PAIR LINK
 
 #define ON 0
 #define OFF 1
@@ -59,9 +59,9 @@
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_CENTER				22	// 22% duty cycle (120 degrees - Centered)
 
-//#define ADC_WIDTH    	ADC_WIDTH_BIT_12
-#define ADC_ATTEN    	ADC_ATTEN_DB_0 // Attenuation level for ADC
-//#define DEFAULT_VREF    1100        // Default voltage reference (millivolts)
+#define ADC_WIDTH    	ADC_WIDTH_BIT_12
+#define ADC_ATTEN    	ADC_ATTEN_DB_0 	 // Attenuation level for ADC
+#define V_REF    		1100        	 // Default voltage reference (millivolts)
 #define ADC_MAX_VALUE 	4095
 #define MAX_VOLTAGE 	3.3
 
@@ -85,12 +85,12 @@ typedef struct __attribute__((packed)) {
 } my_data_t;
 
 //LINK
-#define PAIR_1_TANK_MAC		{0x48, 0xE7, 0x29, 0xB6, 0x76, 0x9C} 
+#define PAIR_1_TANK_MAC		{0xD8, 0x13, 0x2A, 0x7F, 0x9B, 0x34} 
 #define PAIR_1_REMOTE_MAC	{0x48, 0xE7, 0x29, 0x96, 0x9C, 0xEC} 
 #define PAIR_1_REMOTE_MAC_ARR	(uint8_t[])PAIR_1_REMOTE_MAC
 
 //ZELDA
-#define PAIR_2_TANK_MAC		{0x48, 0xE7, 0x29, 0xB6, 0x70, 0xB4}
+#define PAIR_2_TANK_MAC		{0xD8, 0x13, 0x2A, 0x7F, 0x9C, 0xFC}
 #define PAIR_2_REMOTE_MAC	{0x48, 0xE7, 0x29, 0xB5, 0xB2, 0x98}
 #define PAIR_2_REMOTE_MAC_ARR	(uint8_t[])PAIR_2_REMOTE_MAC
 
