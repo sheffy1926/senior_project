@@ -163,8 +163,8 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
 
-        //gpio_set_level(FW_NMOS, packet->fw_led);         //Flywheel Button Toggling - Toggle FW LED
-        //gpio_set_level(IR_S_NMOS, packet->fw_led);       //Turn IR Detectors on/off
+        //gpio_set_level(FW_NMOS, packet->fw_led);       //Flywheel Button Toggling - Toggle FW LED
+        //gpio_set_level(IR_S_NMOS, packet->fw_led);     //Turn IR Detectors on/off
         gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
         gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism
 

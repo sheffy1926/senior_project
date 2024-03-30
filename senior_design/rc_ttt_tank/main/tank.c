@@ -11,14 +11,12 @@
  *  Research IR Sensors and Emitters
  *  3D Design the Tank's Base, Shell, Turret Connection, Barrel, Turret Base 
  * 	Design Custom PCB for Tank
+ * 	Write code to power emitters and sensors
+ *  Configure IR Sensors to detect IR Emitter output
  * Tank TODO List:
  * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor
- * 	2: Write code to power emitters and sensors
- * 	3: Configure IR Sensors to detect IR Emitter output
- * 	4: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	5: Apply this detection sensing into rotational position and send PWM signal to turret motor to rotate
- *  
- * 	Buy more components to have all of the necessary parts to complete the tank maybe buy more 3D filament 
+ * 	2: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
+ * 	3: Apply this detection sensing into rotational position and send PWM signal to turret motor to rotate
 ****************************************************/
 
 #include <stdlib.h>
@@ -40,10 +38,10 @@
 #include "esp_now.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
-//#include "esp_adc/adc_oneshot.h"
-//#include "esp_adc/adc_continous.h"
 #include "driver/adc.h"
 #include <esp_adc_cal.h>
+//#include "esp_adc/adc_oneshot.h"
+//#include "esp_adc/adc_continous.h"
 //#include esp_adc/adc_cali.h 
 //#include esp_adc/adc_cali_scheme.h"
 
@@ -53,7 +51,7 @@
 
 #define DRIVE_PIN_SEL ((1ULL<<RF_IN2_PIN) | (1ULL<<RB_IN1_PIN) | (1ULL<<LB_IN4_PIN) | (1ULL<<LF_IN3_PIN));
 #define OUT_PIN_SEL ((1ULL<<TURRET_PIN) | (1ULL<<FW_NMOS) | (1ULL<<FIRE_PIN) | (1ULL<<IR_EMITS_NMOS) | (1ULL<<IR_S_NMOS));
-#define IN_PIN_SEL ((1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3) | (1ULL<<IR_S_4_CENTER) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6) | (1ULL<<IR_S_7));
+#define IN_PIN_SEL ((1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3_CENTER) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6));
 static const char *TAG = "tank";
 
 /**************************************************
@@ -64,66 +62,42 @@ static const char *TAG = "tank";
 * Return:
 **************************************************/
 void target_tracking_task(void *pvParameter) {
-    int s1_raw;
-    float s1_v;
-    /*int s2_raw;
-    float s2_v;
-    int s3_raw;
-    float s3_v;
-    int s4_center_raw;
-    float s4_center_v;
-    int s5_raw;
-    float s5_v;
-    int s6_raw;
-    float s6_v;
-    int s7_raw;
-    float s7_v;*/
-
-    // Configure ADC
-    /*adc_oneshot_chan_cfg_t config = {
-        .bitwidth = ADC_BITWIDTH_DEFAULT,
-        .atten = ADC_ATTEN_DB_0,
-    };
-
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_6, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_8, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_9, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, ADC_CHANNEL_7, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_4, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_5, &config));
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_7, &config));*/
-
-    /*while (1) {
-        // Read ADC value from IR_S_1
-        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_6, &s1_raw));
-        //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
-        s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
-        // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);
-        // Delay for 0.5 seconds
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-
-        // Read ADC value from IR_S_4_CENTER
-        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, ADC_CHANNEL_7, &s4_center_raw));
-        //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
-        s4_center_v = (s4_center_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
-        // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_4_CENTER Raw Data: %d, Voltage: %f\n", s4_center_raw, s4_center_v);
-
-        //vTaskDelay(10 / portTICK_PERIOD_MS);
-    }*/
-
+    //ADC1_CHANNEL_0
+    int i = 0;
+    int adc_channels[5] = {ADC1_CHANNEL_3,ADC1_CHANNEL_6,ADC1_CHANNEL_7,ADC1_CHANNEL_4,ADC1_CHANNEL_5};
+    int raw_data[5] = {0};
+    float vol_data[5] = {0};
+    //float sort_vol[5] = {0};
+    
     while (1) {
-        // Read ADC value from IR Photodiode
-        s1_raw = adc1_get_raw(ADC1_CHANNEL_4);
-        //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
-        s1_v = (s1_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
-        // Print the ADC value to esp_log
-        ESP_LOGI(TAG, "IR_S_1 Raw Data: %d, Voltage: %f\n", s1_raw, s1_v);
-        // Delay for 0.5 seconds
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
+        for (i = 0; i < 5; i++){
+            // Read ADC value from IR Photodiode
+            //Vout = Dout * Vmax / Dmax = convert raw data to voltage
+            raw_data[i] = adc1_get_raw(adc_channels[i]); 
+            vol_data[i] = (raw_data[i] / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
 
+            // Print the ADC value to esp_log
+            ESP_LOGI(TAG, "IR_S_%d Raw Data: %d, Voltage: %f", i+1, raw_data[i], vol_data[i]);
+            // Delay for 0.5 seconds
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        // Read ADC2 value from IR Photodiode on ADC2_CHANNEL_6
+        /*esp_err_t r = adc2_get_raw(ADC2_CHANNEL_6, ADC_WIDTH, &s7_raw);
+        if (r == ESP_OK) {
+            //Vout = Dout * Vmax / Dmax = convert raw data to voltage 
+            s7_v = (s7_raw / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+            // Print the ADC value to esp_log
+            ESP_LOGI(TAG, "IR_S_7 Raw Data: %d, Voltage: %f\n", s7_raw, s7_v);
+        } else if (r == ESP_ERR_TIMEOUT) {
+            ESP_LOGI(TAG, "ADC2 used by Wi-Fi.\n");
+        }
+        // Delay for 0.5 seconds
+        vTaskDelay(500 / portTICK_PERIOD_MS);*/
+
+        //Sorting algorithm based on IR sensor data
+
+    }
 }
 
 /**************************************************
@@ -189,17 +163,17 @@ void config_gpio_pins(void){
 }
 
 void adc_init(){
-    // Configure ADC 2
-    adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_1
-    adc2_config_channel_atten(ADC2_CHANNEL_8, ADC_ATTEN_DB_11); //IR_S_2
-    adc2_config_channel_atten(ADC2_CHANNEL_9, ADC_ATTEN_DB_11); //IR_S_3
-    adc2_config_channel_atten(ADC2_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_4
     // Configure ADC 1
     adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_config_channel_atten(ADC1_CHANNEL_4, ADC_ATTEN_DB_11); //IR_S_5
-    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_6
-    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_7
+    adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_11); //IR_S_1
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_2
+    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_3
+    adc1_config_channel_atten(ADC1_CHANNEL_4, ADC_ATTEN_DB_11); //IR_S_4
+    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_5
+    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11); //IR_S_6
     gpio_set_level(IR_EMITS_NMOS, 1);   //Turn IR Emitters on/off
+    // Configure ADC 2
+    //adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_7
 }
 
 void app_main(void){

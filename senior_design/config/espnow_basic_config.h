@@ -28,13 +28,13 @@
 
 #define IR_EMITS_NMOS 22 	//Pin to activate Emitters NMOS Low-Side Switch
 #define IR_S_NMOS 23		//Pin to activate Detectors NMOS Low-Side Switch
-#define IR_S_1 14 			//ADC 2_6
-#define IR_S_2 25 			//ADC 2_8
-#define IR_S_3 26 			//ADC 2_9
-#define IR_S_4_CENTER 27 	//ADC 2_7
-#define IR_S_5 32 			//ADC 1_4
-#define IR_S_6 33 			//ADC 1_5
-#define IR_S_7 35 			//ADC 1_7
+#define IR_S_1 39 			//ADC 1_3 	- ADC 2_9 (26)
+#define IR_S_2 34 			//ADC 1_6
+#define IR_S_3_CENTER 35 	//ADC 1_7 	- ADC 2_7 (27)
+#define IR_S_4 32 			//ADC 1_4
+#define IR_S_5 33 			//ADC 1_5
+#define IR_S_6 36 			//ADC 1_0 	- ADC 2_8 (25)
+//#define IR_S_7 14 		//			- ADC 2_6 (14)
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12			//Right Forward Driving Button
@@ -53,15 +53,14 @@
 #define PWM_FREQUENCY      		50 	// Hz
 #define DUTY_MIN_FIRE       	8   // 8% duty cycle (0 degrees)
 #define DUTY_MAX_FIRE       	20  // 20% duty cycle (90 degrees on this servo)
-
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_CENTER				22	// 22% duty cycle (120 degrees - Centered)
 
 #define ADC_WIDTH    	ADC_WIDTH_BIT_12
-#define ADC_ATTEN    	ADC_ATTEN_DB_0 	 // Attenuation level for ADC
-#define V_REF    		1100        	 // Default voltage reference (millivolts)
+#define ADC_ATTEN    	ADC_ATTEN_DB_11 	// Attenuation level for ADC
+#define V_REF    		1100        	 	// Default voltage reference (millivolts)
 #define ADC_MAX_VALUE 	4095
 #define MAX_VOLTAGE 	3.3
 
