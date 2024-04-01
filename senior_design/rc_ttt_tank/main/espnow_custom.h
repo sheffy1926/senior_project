@@ -36,26 +36,24 @@ typedef struct {
     int len;
 } recv_packet_t;
 
+static uint32_t angle = 0;
+static uint32_t rotate_turret = 0;
+//static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
+
 #define MY_ESPNOW_WIFI_MODE WIFI_MODE_STA
 #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
 
 //Prototypes
 /**************************************************
 * Title:	target_tracking_task
-* Summary:	Controls IR Sensors and Emitters and send data to turret 
-            task based if there is an IR signal detected.
+* Summary:	Controls IR Sensors and emitters and send data to turret task based if 
+            there is an IR signal detected. Rotates the Turret Servo Motor. 
+            Based on Target Tracking Input Data from the IR Detectors based on if 
+            they are receiving IR light or not from the other tank's emitters.
 * Param:
 * Return:
 **************************************************/
 void target_tracking_task(void *pvParameter);
-
-/**************************************************
-* Title:	turret_task
-* Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
-* Param:
-* Return:
-**************************************************/
-void turret_task(void *pvParameter);
 
 /**************************************************
 * Title:	firing_task

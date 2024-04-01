@@ -5,70 +5,6 @@ static const char *TAG = "tank_espnow_custom";
 
 //static uint32_t fw_state = 0;
 static uint32_t fire_servo = 0;
-static uint32_t rotate_turret = 0;
-static uint32_t angle = 0;
-
-/**************************************************
-* Title:	turret_task
-* Summary:	Rotates the Turret Servo Motor. Based on Target Tracking Input Data
-            from the IR Detectors based on if they are receiving IR light or not
-            from the other tank's emitters. 
-* Param:
-* Return:
-**************************************************/
-/*void turret_task(void *pvParameter){
-
-    ledc_timer_config_t timer_conf1;
-    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf1.timer_num = TURRET_PWM_TIMER;
-	timer_conf1.duty_resolution = DUTY_RESOLUTION;
-    timer_conf1.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf1);
-
-    ledc_channel_config_t ledc_conf1;
-    ledc_conf1.gpio_num = TURRET_PIN;
-    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf1.channel = TURRET_PWM_CHANNEL;
-    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf1.duty = 256;
-    ledc_conf1.hpoint = 0;
-    ledc_channel_config(&ledc_conf1);
-
-    //static uint32_t rotation_angle[7] = {10,14,18,22,26,29,32}; //min = 10, max = 32
-    static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
-    //static uint32_t rotation_angle[11] = {12,14,16,18,20,22,24,26,28,30,32}; //min = 10, max = 32
- 
-    while (1) {
-        //Rotate the turret servo if IR sensors detect target tank in range 
-        if (rotate_turret == 1){
-            //ESP_LOGI(TAG, "Turret Servo Activated");
-            vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, rotation_angle[angle]);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.25 seconds
-            }
-            angle++;
-        }
-        else {
-            //ESP_LOGI(TAG, "Turret Servo Activated");
-            vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
-            for(int i = 0; i < 2; i++){
-                //Rotate the servo forward (180 degrees)
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, rotation_angle[0]);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.25 seconds
-            }
-        }
-        //Reset angle counter
-        if (angle >= 11){
-            angle = 0;
-        }
-        vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
-	}
-}*/
 
 /**************************************************
 * Title:	firing_task
@@ -164,26 +100,24 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LB_IN4_PIN, packet->lb);
 
         //gpio_set_level(FW_NMOS, packet->fw_led);       //Flywheel Button Toggling - Toggle FW LED
-        //gpio_set_level(IR_S_NMOS, packet->fw_led);     //Turn IR Detectors on/off
+        gpio_set_level(IR_S_NMOS, packet->fw_led);     //Turn IR Detectors on/off
         gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
         gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism
 
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
         if(packet->fw_led == 1){
+            rotate_turret = 1;
             if(packet->fire_turret == 1){
-                //fire_servo = 1;
-                //rotate_turret = 1;
+                fire_servo = 1;
                 vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
             }
             else {
-                //fire_servo = 0;
-                rotate_turret = 0;
+                fire_servo = 0;
             }
         }
-        else if (packet->fw_led == 0){
-            //rotate_turret = 0;
-            //angle = 5;
+        else {
+            rotate_turret = 0;
         }
     }
 	return;

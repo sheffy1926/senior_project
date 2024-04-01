@@ -34,7 +34,7 @@
 #define IR_S_4 32 			//ADC 1_4
 #define IR_S_5 33 			//ADC 1_5
 #define IR_S_6 36 			//ADC 1_0 	- ADC 2_8 (25)
-//#define IR_S_7 14 		//			- ADC 2_6 (14)
+//#define IR_S_7 14 					- ADC 2_6 (14)
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12			//Right Forward Driving Button
@@ -56,13 +56,17 @@
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
+#define DUTY_CYCLE_STEP			1
+#define MIN_DUTY_CYCLE 			10
 #define DUTY_CENTER				22	// 22% duty cycle (120 degrees - Centered)
+#define MAX_DUTY_CYCLE			32
 
 #define ADC_WIDTH    	ADC_WIDTH_BIT_12
 #define ADC_ATTEN    	ADC_ATTEN_DB_11 	// Attenuation level for ADC
 #define V_REF    		1100        	 	// Default voltage reference (millivolts)
 #define ADC_MAX_VALUE 	4095
 #define MAX_VOLTAGE 	3.3
+#define MIN_VOLTAGE		0.5
 
 //message types
 #define TANK_COMMAND  	1
