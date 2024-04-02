@@ -14,7 +14,7 @@ static uint32_t fire_servo = 0;
 * Param:
 * Return:
 **************************************************/
-/*void firing_task(void *pvParameter) {
+void firing_task(void *pvParameter) {
     esp_rom_gpio_pad_select_gpio(FIRE_PIN);
 
     ledc_timer_config_t timer_conf0;
@@ -43,7 +43,7 @@ static uint32_t fire_servo = 0;
                 // Rotate the servo forward (180 degrees)
                 ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MAX_FIRE);
                 ledc_update_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
+                vTaskDelay(250 / portTICK_PERIOD_MS); // Wait for 0.25 seconds
 
                 // Rotate the servo back to the starting position (0 degrees)
                 ledc_set_duty(LEDC_HIGH_SPEED_MODE, SERVO_PWM_CHANNEL, DUTY_MIN_FIRE);
@@ -54,7 +54,7 @@ static uint32_t fire_servo = 0;
         }
         vTaskDelay(10 / portTICK_PERIOD_MS); // Release for 10 milliseconds
     }
-}*/
+}
 
 /**************************************************
 * Title:	recv_cb
@@ -99,7 +99,7 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
         gpio_set_level(LF_IN3_PIN, packet->lf);
         gpio_set_level(LB_IN4_PIN, packet->lb);
 
-        //gpio_set_level(FW_NMOS, packet->fw_led);       //Flywheel Button Toggling - Toggle FW LED
+        gpio_set_level(FW_NMOS, packet->fw_led);       //Flywheel Button Toggling - Toggle FW LED
         gpio_set_level(IR_S_NMOS, packet->fw_led);     //Turn IR Detectors on/off
         gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
         gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism

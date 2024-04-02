@@ -227,6 +227,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
 **************************************************/
 void turret_rotation(int angle){
     for(int i = 0; i < 2; i++){
+        //ESP_LOGI(TAG,"Angle for Rotation: %d",angle);
         //Rotate the turret 
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
