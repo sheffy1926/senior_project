@@ -58,7 +58,7 @@
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_CYCLE_STEP			1
 #define MIN_DUTY_CYCLE 			10
-#define DUTY_CENTER				22	// 22% duty cycle (120 degrees - Centered)
+#define DUTY_CENTER				22	//(135 degrees - Centered) (MIN + MAX) / 2 
 #define MAX_DUTY_CYCLE			32
 
 #define ADC_WIDTH    	ADC_WIDTH_BIT_12

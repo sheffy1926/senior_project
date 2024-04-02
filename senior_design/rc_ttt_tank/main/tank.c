@@ -13,10 +13,10 @@
  * 	Design Custom PCB for Tank
  * 	Write code to power emitters and sensors
  *  Configure IR Sensors to detect IR Emitter output
+ * 	Reconfigure IR Sensors to detect emitters and determine which sensor is receiving the strongest signal 
+ * 	Apply this detection sensing into rotational position and send signal to turret motor to rotate
  * Tank TODO List:
  * 	1: Reconfigure flywheel input to toggle on flywheels by flipping a transistor
- * 	2: Reconfigure IR Sensors to detect emitters and determine which sensors is receiving the strongest signal 
- * 	3: Apply this detection sensing into rotational position and send PWM signal to turret motor to rotate
 ****************************************************/
 
 #include <stdlib.h>
@@ -69,27 +69,10 @@ void target_tracking_task(void *pvParameter) {
     int adc_channels[5] = {ADC1_CHANNEL_3,ADC1_CHANNEL_6,ADC1_CHANNEL_7,ADC1_CHANNEL_4,ADC1_CHANNEL_5};
     int raw_data[5] = {0};
     float v_data[5] = {0};
-    float v_sensor[5] = {1,2,3,4,5};
+    int v_sensor[5] = {1,2,3,4,5};
+    angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
+    rotate_turret = 1;
 
-    ledc_timer_config_t timer_conf1;
-    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer_conf1.timer_num = TURRET_PWM_TIMER;
-	timer_conf1.duty_resolution = DUTY_RESOLUTION;
-    timer_conf1.freq_hz = PWM_FREQUENCY;
-    ledc_timer_config(&timer_conf1);
-
-    ledc_channel_config_t ledc_conf1;
-    ledc_conf1.gpio_num = TURRET_PIN;
-    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
-    ledc_conf1.channel = TURRET_PWM_CHANNEL;
-    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
-    ledc_conf1.duty = 256;
-    ledc_conf1.hpoint = 0;
-    ledc_channel_config(&ledc_conf1);
-    // Initialize turret angle to midpoint (135 degrees) (22?)
-    int angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
-    
     while (1) {
         //If the flywheels are activated, then the turret and sensors are active for sensing and rotating
         if(rotate_turret == 1){
@@ -101,10 +84,10 @@ void target_tracking_task(void *pvParameter) {
                 v_sensor[i] = i+1;
 
                 //Print the ADC value to esp_log
-                ESP_LOGI(TAG, "IR_S_%d Raw Data: %d, Voltage: %f", i+1, raw_data[i], v_data[i]);
-                //Delay for 0.1 seconds
-                vTaskDelay(50 / portTICK_PERIOD_MS);
+                ESP_LOGI(TAG, "Original IR_S_%d Raw Data: %d, Voltage: %f", i+1, raw_data[i], v_data[i]);
             }
+            //Delay for 0.1 seconds
+            //vTaskDelay(100 / portTICK_PERIOD_MS);
             //Read ADC2 value from IR Photodiode on ADC2_CHANNEL_6
             /*esp_err_t r = adc2_get_raw(ADC2_CHANNEL_6, ADC_WIDTH, &s7_raw);
             if (r == ESP_OK) {
@@ -133,96 +116,121 @@ void target_tracking_task(void *pvParameter) {
                     }
                 }
             }
-
-            //Adjust angle of turret based on what sensor has the highest voltage
-            int angle_adjustment = 0;
-            if (v_data[0] >= MIN_VOLTAGE && v_data[0] <= MAX_VOLTAGE) {
-                if (v_sensor[0] == 1) {
-                    if (v_sensor[1] == 2){
-                        angle_adjustment = 1;   // Rotate turret clockwise
-                    }
-                    else if (v_sensor[1] == 5){
-                        angle_adjustment = -1;  // Rotate turret counter clockwise
-                    }
-                    else {
-                        angle_adjustment = 1;   // Rotate turret clockwise
-                    }
-                } else if (v_sensor[0] == 2){
-                    angle_adjustment = 1;       // Rotate turret clockwise
-                } else if (v_sensor[0] == 4){
-                    angle_adjustment = -1;      // Rotate turret counter clockwise
-                } else if (v_sensor[0] == 5){
-                    if (v_sensor[1] == 4){
-                        angle_adjustment = -1;  // Rotate turret counter clockwise
-                    }
-                    else if (v_sensor[1] == 1){
-                        angle_adjustment = 1;   // Rotate turret clockwise
-                    }
-                    else {
-                        angle_adjustment = -1;  // Rotate turret counter clockwise
-                    }
-                //If the center sensor has the highest value make minor adjustments to fine tune the direction of the turret.
-                } else if (v_sensor[0] == 3) {
-                    // Rotate one way to see if the value goes up, then rotate back if it goes down
-                    int original_angle = angle;
-                    angle += angle_adjustment * DUTY_CYCLE_STEP;
-                    for(int i = 0; i < 2; i++){
-                        //Rotate the turret 
-                        ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
-                        ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                        vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-                    }
-
-                    // If value increases, continue rotating in the same direction
-                    int new_sensor_value = adc1_get_raw(adc_channels[2]);
-                    float new_sensor_voltage = (new_sensor_value / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
-                    //If the voltage got worse rotate back to the original angle
-                    if (new_sensor_voltage < v_data[0]) {
-                        if (angle_adjustment == 1){
-                            angle_adjustment = -1;
-                        }
-                        else {
-                            angle_adjustment = 1;
-                        }
-                        angle = original_angle;
-                    }
-                }
-                // Update turret angle within limits
-                angle += angle_adjustment * DUTY_CYCLE_STEP;
-                if (angle < MIN_DUTY_CYCLE) {
-                    angle = MIN_DUTY_CYCLE;
-                } else if (angle > MAX_DUTY_CYCLE) {
-                    angle = MAX_DUTY_CYCLE;
-                }
+            //Print The new sorted order of sensors 
+            for (int i = 0; i < 5; i++){
+                //Print the ADC value to esp_log
+                ESP_LOGI(TAG, "Sorted IR_S_%d Voltage: %f", v_sensor[i], v_data[i]);
             }
-            //If no sensor is receiving a high enough value return to the starting position
-            else {
-                angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
-            }
+            //Delay for 0.1 seconds
+            //vTaskDelay(100 / portTICK_PERIOD_MS);
 
-            // Set the duty cycle of the servo motor based on turret angle
-            for(int i = 0; i < 2; i++){
-                //Rotate the turret 
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
-
+            //Adjust the angle of the turret in order to maximize sensor readings
+            angle_adjustment(channels,v_data,v_sensor,adc_channels);
         }
         //If the flywheels are off, then turn the sensors and rotation off
         else {
-            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
-
-            // Set the duty cycle of the servo motor based on turret angle
-            for(int i = 0; i < 2; i++){
-                //Rotate the turret 
-                ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
-                ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
-                vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
-            }
+            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2; //22 is the center
+            turret_rotation(angle);
         }
-        //Delay for 0.5 seconds
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        //Delay for 1 second
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+/**************************************************
+* Title: angle_adjustment
+* Summary: adjusts the angle of the turret based on sensor data in order to maximize sensor reading
+* Param:
+* Return:
+**************************************************/
+void angle_adjustment(int channels, float v_data[channels], int v_sensor[channels], int adc_channels[channels]){
+    //Adjust angle of turret based on what sensor has the highest voltage
+    int angle_adjustment = 0;
+    if (v_data[0] >= MIN_VOLTAGE && v_data[0] <= MAX_VOLTAGE) {
+        if (v_sensor[0] == 1) {
+            if (v_sensor[1] == 2){
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+            else if (v_sensor[1] == 5){
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+            else {
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+        } 
+        else if (v_sensor[0] == 2){
+            angle_adjustment = 1;       // Rotate turret clockwise
+        } 
+        else if (v_sensor[0] == 4){
+            angle_adjustment = -1;      // Rotate turret counter clockwise
+        } 
+        else if (v_sensor[0] == 5){
+            if (v_sensor[1] == 4){
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+            else if (v_sensor[1] == 1){
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+            else {
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+        } 
+        //If the center sensor has the highest value make minor adjustments to fine tune the direction of the turret.
+        else if (v_sensor[0] == 3) {
+            // Rotate one way to see if the value goes up, then rotate back if it goes down
+            int original_angle = angle;
+            angle += angle_adjustment * DUTY_CYCLE_STEP;
+
+            //Rotate the turret based on sensor data 
+            turret_rotation(angle);
+
+            // If value increases, continue rotating in the same direction
+            int new_sensor_value = adc1_get_raw(adc_channels[2]);
+            float new_sensor_voltage = (new_sensor_value / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+            //If the voltage got worse rotate back to the original angle
+            if (new_sensor_voltage < v_data[0]) {
+                if (angle_adjustment == 1){
+                    angle_adjustment = -1;
+                }
+                else {
+                    angle_adjustment = 1;
+                }
+                angle = original_angle;
+            }
+            //Print the ADC value to esp_log
+            ESP_LOGI(TAG, "1 Angle= %d, Adjustment= %d, IR_S_%d = %f V, new_voltage= %f V",angle, angle_adjustment, v_sensor[0], v_data[0], new_sensor_voltage);
+        }
+        //Print the ADC value to esp_log
+        ESP_LOGI(TAG, "2 Angle = %d, Adjustment= %d, IR_S_%d = %f V",angle, angle_adjustment, v_sensor[0], v_data[0]);
+        // Update turret angle within limits
+        angle += angle_adjustment * DUTY_CYCLE_STEP;
+        if (angle < MIN_DUTY_CYCLE) {
+            angle = MIN_DUTY_CYCLE;
+        } 
+        else if (angle > MAX_DUTY_CYCLE) {
+            angle = MAX_DUTY_CYCLE;
+        }
+    }
+    //If no sensor is receiving a high enough value return to the starting position
+    else {
+        angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2; //22 is the center
+    }
+    //Rotate the turret based on sensor data
+    turret_rotation(angle);
+}
+
+/**************************************************
+* Title: turret_rotation
+* Summary: rotates the turret servo motor based on input from the sensors and emitters
+* Param:
+* Return:
+**************************************************/
+void turret_rotation(int angle){
+    for(int i = 0; i < 2; i++){
+        //Rotate the turret 
+        ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
+        ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+        vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
     }
 }
 
@@ -288,7 +296,13 @@ void config_gpio_pins(void){
     gpio_set_level(TURRET_PIN,DUTY_CENTER);
 }
 
-void adc_init(){
+/**************************************************
+* Title: adc_turret_init
+* Summary: initialize adc channels and turret LEDC channel
+* Param:
+* Return:
+**************************************************/
+void adc_turret_init(){
     // Configure ADC 1
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_11); //IR_S_1
@@ -300,13 +314,30 @@ void adc_init(){
     gpio_set_level(IR_EMITS_NMOS, 1);   //Turn IR Emitters on/off
     // Configure ADC 2
     //adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_7
+
+    ledc_timer_config_t timer_conf1;
+    timer_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf1.timer_num = TURRET_PWM_TIMER;
+	timer_conf1.duty_resolution = DUTY_RESOLUTION;
+    timer_conf1.freq_hz = PWM_FREQUENCY;
+    ledc_timer_config(&timer_conf1);
+
+    ledc_channel_config_t ledc_conf1;
+    ledc_conf1.gpio_num = TURRET_PIN;
+    ledc_conf1.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf1.channel = TURRET_PWM_CHANNEL;
+    ledc_conf1.intr_type = LEDC_INTR_DISABLE;
+    ledc_conf1.timer_sel = TURRET_PWM_TIMER;
+    ledc_conf1.duty = 256;
+    ledc_conf1.hpoint = 0;
+    ledc_channel_config(&ledc_conf1);
 }
 
 void app_main(void){
 	//Set up gpio pins to correct modes
     config_gpio_pins();
     //Initialize ADCs
-    adc_init();
+    adc_turret_init();
 
 	//for some reason just having this makes it faster
 	//!note I would prefer not to have it
@@ -319,8 +350,7 @@ void app_main(void){
 
 	//init target tracking, turret rotation, firing task
 	//xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
-    //xTaskCreate(turret_task, "turret_task", 2048, NULL, 5, NULL);
-	xTaskCreate(target_tracking_task, "target_tracking_task", 1024, NULL, 5, NULL);
+	xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 5, NULL);
 
 	while(1){
 		vTaskDelay(250 / portTICK_PERIOD_MS);

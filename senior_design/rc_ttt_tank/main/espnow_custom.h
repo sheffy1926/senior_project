@@ -36,7 +36,8 @@ typedef struct {
     int len;
 } recv_packet_t;
 
-static uint32_t angle = 0;
+// Initialize turret angle to midpoint (135 degrees) (22?)
+static int angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
 static uint32_t rotate_turret = 0;
 //static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
 
@@ -54,6 +55,22 @@ static uint32_t rotate_turret = 0;
 * Return:
 **************************************************/
 void target_tracking_task(void *pvParameter);
+
+/**************************************************
+* Title: turret_rotation
+* Summary: rotates the turret servo motor based on input from the sensors and emitters
+* Param:
+* Return:
+**************************************************/
+void turret_rotation(int angle);
+
+/**************************************************
+* Title: angle_adjustment
+* Summary: adjusts the angle of the turret based on sensor data in order to maximize sensor reading
+* Param:
+* Return:
+**************************************************/
+void angle_adjustment(int channels, float v_data[channels], int v_sensor[channels], int adc_channels[channels]);
 
 /**************************************************
 * Title:	firing_task
@@ -110,11 +127,11 @@ void init_espnow_slave(void);
 void config_gpio_pins(void);
 
 /**************************************************
-* Title: adc_init
-* Summary: initialize adc channels
+* Title: adc_turret_init
+* Summary: initialize adc channels and turret LEDC channel
 * Param:
 * Return:
 **************************************************/
-void adc_init();
+void adc_turret_init();
 
 #endif //ESP_NOW_CUSTOM_H
