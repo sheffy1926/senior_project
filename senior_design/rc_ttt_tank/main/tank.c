@@ -54,6 +54,9 @@
 #define IN_PIN_SEL ((1ULL<<IR_S_1) | (1ULL<<IR_S_2) | (1ULL<<IR_S_3_CENTER) | (1ULL<<IR_S_4) | (1ULL<<IR_S_5) | (1ULL<<IR_S_6));
 static const char *TAG = "tank";
 
+// Initialize turret angle to midpoint (135 degrees) (22?)
+static int angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1;
+
 /**************************************************
 * Title:	target_tracking_task
 * Summary:	Controls IR Sensors and emitters and send data to turret task based if 
@@ -64,14 +67,12 @@ static const char *TAG = "tank";
 * Return:
 **************************************************/
 void target_tracking_task(void *pvParameter) {
-    //,ADC1_CHANNEL_0
+    //ADC1_CHANNEL_3,ADC1_CHANNEL_6,ADC1_CHANNEL_0
     int channels = 5;
     int adc_channels[5] = {ADC1_CHANNEL_3,ADC1_CHANNEL_6,ADC1_CHANNEL_7,ADC1_CHANNEL_4,ADC1_CHANNEL_5};
     int raw_data[5] = {0};
     float v_data[5] = {0};
     int v_sensor[5] = {1,2,3,4,5};
-    angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
-    rotate_turret = 1;
 
     while (1) {
         //If the flywheels are activated, then the turret and sensors are active for sensing and rotating
@@ -117,7 +118,7 @@ void target_tracking_task(void *pvParameter) {
                 }
             }
             //Print The new sorted order of sensors 
-            for (int i = 0; i < 5; i++){
+            for (int i = 0; i < channels; i++){
                 //Print the ADC value to esp_log
                 ESP_LOGI(TAG, "Sorted IR_S_%d Voltage: %f", v_sensor[i], v_data[i]);
             }
@@ -129,8 +130,8 @@ void target_tracking_task(void *pvParameter) {
         }
         //If the flywheels are off, then turn the sensors and rotation off
         else {
-            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2; //22 is the center
-            turret_rotation(angle);
+            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
+            turret_rotation();
         }
         //Delay for 1 second
         vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -159,7 +160,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
             }
         } 
         else if (v_sensor[0] == 2){
-            angle_adjustment = 1;       // Rotate turret clockwise
+            angle_adjustment = -1;       // Rotate turret clockwise
         } 
         else if (v_sensor[0] == 4){
             angle_adjustment = -1;      // Rotate turret counter clockwise
@@ -174,7 +175,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
             else {
                 angle_adjustment = -1;  // Rotate turret counter clockwise
             }
-        } 
+        }
         //If the center sensor has the highest value make minor adjustments to fine tune the direction of the turret.
         else if (v_sensor[0] == 3) {
             // Rotate one way to see if the value goes up, then rotate back if it goes down
@@ -182,7 +183,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
             angle += angle_adjustment * DUTY_CYCLE_STEP;
 
             //Rotate the turret based on sensor data 
-            turret_rotation(angle);
+            turret_rotation();
 
             // If value increases, continue rotating in the same direction
             int new_sensor_value = adc1_get_raw(adc_channels[2]);
@@ -216,7 +217,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
         angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2; //22 is the center
     }
     //Rotate the turret based on sensor data
-    turret_rotation(angle);
+    turret_rotation();
 }
 
 /**************************************************
@@ -225,7 +226,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
 * Param:
 * Return:
 **************************************************/
-void turret_rotation(int angle){
+void turret_rotation(void){
     for(int i = 0; i < 2; i++){
         //ESP_LOGI(TAG,"Angle for Rotation: %d",angle);
         //Rotate the turret 
@@ -294,7 +295,7 @@ void config_gpio_pins(void){
     gpio_set_level(LB_IN4_PIN, 0);
     gpio_set_level(IR_EMITS_NMOS, 0);
     gpio_set_level(IR_S_NMOS,0);
-    gpio_set_level(TURRET_PIN,DUTY_CENTER);
+    gpio_set_level(TURRET_PIN,21);
 }
 
 /**************************************************
@@ -350,8 +351,8 @@ void app_main(void){
 	vTaskDelay(2000 /portTICK_PERIOD_MS);
 
 	//init target tracking, turret rotation, firing task
-	//xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
-	xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 5, NULL);
+	xTaskCreate(firing_task, "firing_task", 1024, NULL, 5, NULL);
+	xTaskCreate(target_tracking_task, "target_tracking_task", 4096, NULL, 4, NULL);
 
 	while(1){
 		vTaskDelay(250 / portTICK_PERIOD_MS);

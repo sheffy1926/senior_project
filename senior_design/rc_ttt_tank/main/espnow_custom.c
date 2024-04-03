@@ -3,7 +3,6 @@
 //extern static const char *TAG;
 static const char *TAG = "tank_espnow_custom";
 
-//static uint32_t fw_state = 0;
 static uint32_t fire_servo = 0;
 
 /**************************************************
@@ -78,8 +77,10 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 							  //because we checked the length above
 
     //ESP_LOGI(TAG, "message_type: %d", packet->message_type);
-    //ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
+    ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
     //ESP_LOGI(TAG, "activate_fw: %d", packet->activate_fw);
+    ESP_LOGI(TAG, "fw_led: %d", packet->fw_led);
+
 
 	if(packet->message_type != TANK_COMMAND){
 		ESP_LOGE(TAG, "wrong message_type received from remote");
@@ -203,10 +204,10 @@ void init_espnow_slave(void){
     // Define a receive function pointer using the typedef
     esp_now_recv_cb_t recv_cb_ptr = &recv_cb;
     ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb_ptr) );  
-    ESP_LOGD(TAG,"Attempting to register recv_cb for tank");
+    ESP_LOGI(TAG,"Attempting to register recv_cb for tank");
 
     ESP_ERROR_CHECK( esp_now_register_send_cb(packet_sent_cb) );
-    ESP_LOGD(TAG,"Attempting to register send_espnow_data for tank");
+    ESP_LOGI(TAG,"Attempting to register send_espnow_data for tank");
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK));
 
     const esp_now_peer_info_t broadcast_destination = {

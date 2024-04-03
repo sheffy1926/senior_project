@@ -36,8 +36,7 @@ typedef struct {
     int len;
 } recv_packet_t;
 
-// Initialize turret angle to midpoint (135 degrees) (22?)
-static int angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2;
+
 static uint32_t rotate_turret = 0;
 //static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
 
@@ -62,7 +61,7 @@ void target_tracking_task(void *pvParameter);
 * Param:
 * Return:
 **************************************************/
-void turret_rotation(int angle);
+void turret_rotation(void);
 
 /**************************************************
 * Title: angle_adjustment
