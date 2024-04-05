@@ -229,7 +229,7 @@ void button_task(void *args) {
                     //Turn on FIRE LED for 1 sec each time it is pressed 
                     if (led_state == TRUE){
                         gpio_set_level(FIRE_LED, 1);
-                        ESP_LOGI(TAG,"Fire Button Pressed");
+                        //ESP_LOGI(TAG,"Fire Button Pressed");
                         vTaskDelay(500 / portTICK_PERIOD_MS);
                         gpio_set_level(FIRE_LED, 0);
                     }
@@ -238,7 +238,7 @@ void button_task(void *args) {
                     //Toggle Flywheel LED each time button is pushed
                     led_state = !led_state;
                     gpio_set_level(FW_LED, led_state);
-                    ESP_LOGI(TAG,"Flywheel Button Pressed");
+                    //ESP_LOGI(TAG,"Flywheel Button Pressed");
                 }
             }
             //Send Button Press Data through ESPNOW
@@ -331,6 +331,6 @@ void app_main(void){
     
 	while(1){
 		send_espnow_data();
-		vTaskDelay(750 / portTICK_PERIOD_MS);
+		vTaskDelay(250 / portTICK_PERIOD_MS);
 	}
 }

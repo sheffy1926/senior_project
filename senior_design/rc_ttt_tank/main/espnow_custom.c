@@ -4,6 +4,190 @@
 static const char *TAG = "tank_espnow_custom";
 
 static uint32_t fire_servo = 0;
+static int rotate_turret = 0;
+// Initialize turret angle to midpoint (135 degrees) (22?)
+static uint32_t angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1;
+//static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
+//static uint32_t rotation_angle[23] = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}; //min = 10, max = 32
+
+/**************************************************
+* Title:	target_tracking_task
+* Summary:	Controls IR Sensors and emitters and send data to turret task based if 
+            there is an IR signal detected. Rotates the Turret Servo Motor. 
+            Based on Target Tracking Input Data from the IR Detectors based on if 
+            they are receiving IR light or not from the other tank's emitters.
+* Param:
+* Return:
+**************************************************/
+void target_tracking_task(void *pvParameter) {
+    // Configure ADC 1
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    //adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_11); //IR_S_2
+    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11); //IR_S_3
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_4
+    adc1_config_channel_atten(ADC1_CHANNEL_4, ADC_ATTEN_DB_11); //IR_S_5
+    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_6
+    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_7
+    // Configure ADC 2
+    //adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_1 
+
+    //ADC1_CHANNEL_3
+    int channels = 5;
+    int adc_channels[5] = {ADC1_CHANNEL_0,ADC1_CHANNEL_6,ADC1_CHANNEL_4,ADC1_CHANNEL_5,ADC1_CHANNEL_7};
+    int raw_data[5] = {0};
+    float v_data[5] = {0};
+    int v_sensor[5] = {3,4,5,6,7};
+    //rotate_turret = 1;
+
+    while (1) {
+        //If the flywheels are activated, then the turret and sensors are active for sensing and rotating
+        if(rotate_turret == 1){
+            for (int i = 0; i < channels; i++){
+                //Read ADC value from IR Photodiode
+                //Vout = Dout * Vmax / Dmax = convert raw data to voltage
+                raw_data[i] = adc1_get_raw(adc_channels[i]); 
+                v_data[i] = (raw_data[i] / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+                v_sensor[i] = i+1;
+
+                //Print the ADC value to esp_log
+                ESP_LOGI(TAG, "Original IR_S_%d Raw Data: %d, Voltage: %f", i+1, raw_data[i], v_data[i]);
+            }
+
+            //Bubble Sort algorithm to sort v_data and v_sensor in descending order
+            for (int i = 0; i < channels - 1; i++) {
+                for (int j = 0; j < channels - i - 1; j++) {
+                    if (v_data[j] < v_data[j + 1]) {
+                        //Swap v_data[j] and v_data[j + 1]
+                        float temp = v_data[j];
+                        v_data[j] = v_data[j + 1];
+                        v_data[j + 1] = temp;
+                        //Swap v_sensor[j] and v_sensor[j + 1]
+                        int n = v_sensor[j];
+                        v_sensor[j] = v_sensor[j + 1];
+                        v_sensor[j + 1] = n;
+                    }
+                }
+            }
+            //Print The new sorted order of sensors 
+            for (int i = 0; i < channels; i++){
+                //Print the ADC value to esp_log
+                ESP_LOGI(TAG, "Sorted IR_S_%d Voltage: %f", v_sensor[i], v_data[i]);
+            }
+            //Delay for 0.1 seconds
+            //vTaskDelay(100 / portTICK_PERIOD_MS);
+
+            //Adjust the angle of the turret in order to maximize sensor readings
+            //angle_adjustment(channels,v_data,v_sensor,adc_channels);
+        }
+        //If the flywheels are off, then turn the sensors and rotation off
+        else {
+            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
+            //turret_rotation();
+        }
+        //Delay for 1 second
+        ESP_LOGI(TAG,"Rotate_Turret = %d",rotate_turret);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+/**************************************************
+* Title: angle_adjustment
+* Summary: adjusts the angle of the turret based on sensor data in order to maximize sensor reading
+* Param:
+* Return:
+**************************************************/
+void angle_adjustment(int channels, float v_data[channels], int v_sensor[channels], int adc_channels[channels]){
+    //Adjust angle of turret based on what sensor has the highest voltage
+    int angle_adjustment = 0;
+    if (v_data[0] >= MIN_VOLTAGE && v_data[0] <= MAX_VOLTAGE) {
+        if (v_sensor[0] == 5) {
+            if (v_sensor[1] == 4){
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+            else if (v_sensor[1] == 7){
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+            else {
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+        } 
+        else if (v_sensor[0] == 4){
+            angle_adjustment = 1;       // Rotate turret clockwise
+        } 
+        else if (v_sensor[0] == 6){
+            angle_adjustment = -1;      // Rotate turret counter clockwise
+        } 
+        else if (v_sensor[0] == 7){
+            if (v_sensor[1] == 6){
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+            else if (v_sensor[1] == 5){
+                angle_adjustment = 1;   // Rotate turret clockwise
+            }
+            else {
+                angle_adjustment = -1;  // Rotate turret counter clockwise
+            }
+        }
+        //If the center sensor has the highest value make minor adjustments to fine tune the direction of the turret.
+        else if (v_sensor[0] == 3) {
+            // Rotate one way to see if the value goes up, then rotate back if it goes down
+            int original_angle = angle;
+            angle += angle_adjustment * DUTY_CYCLE_STEP;
+
+            //Rotate the turret based on sensor data 
+            turret_rotation();
+
+            // If value increases, continue rotating in the same direction
+            int new_sensor_value = adc1_get_raw(adc_channels[2]);
+            float new_sensor_voltage = (new_sensor_value / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
+            //If the voltage got worse rotate back to the original angle
+            if (new_sensor_voltage < v_data[0]) {
+                if (angle_adjustment == 1){
+                    angle_adjustment = -1;
+                }
+                else {
+                    angle_adjustment = 1;
+                }
+                angle = original_angle;
+            }
+            //Print the ADC value to esp_log
+            ESP_LOGI(TAG, "Center Adjustment= %d, IR_S_%d = %f V, new_voltage= %f V",angle_adjustment, v_sensor[0], v_data[0], new_sensor_voltage);
+        }
+        //Print the ADC value to esp_log
+        ESP_LOGI(TAG, "Other Adjustment= %d, IR_S_%d = %f V",angle_adjustment, v_sensor[0], v_data[0]);
+        // Update turret angle within limits
+        angle += angle_adjustment * DUTY_CYCLE_STEP;
+        if (angle < MIN_DUTY_CYCLE) {
+            angle = MIN_DUTY_CYCLE;
+        } 
+        else if (angle > MAX_DUTY_CYCLE) {
+            angle = MAX_DUTY_CYCLE;
+        }
+    }
+    //If no sensor is receiving a high enough value return to the starting position
+    else {
+        angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
+    }
+    //Rotate the turret based on sensor data
+    turret_rotation();
+}
+
+/**************************************************
+* Title: turret_rotation
+* Summary: rotates the turret servo motor based on input from the sensors and emitters
+* Param:
+* Return:
+**************************************************/
+void turret_rotation(void){
+    for(int i = 0; i < 2; i++){
+        //Rotate the turret 
+        ledc_set_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL, angle);
+        ledc_update_duty(LEDC_HIGH_SPEED_MODE, TURRET_PWM_CHANNEL);
+        vTaskDelay(500 / portTICK_PERIOD_MS); // Wait for 0.5 seconds
+    }
+    //ESP_LOGI(TAG,"Angle for Rotation: %u",angle);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+}
 
 /**************************************************
 * Title:	firing_task
@@ -77,9 +261,9 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 							  //because we checked the length above
 
     //ESP_LOGI(TAG, "message_type: %d", packet->message_type);
-    ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
+    //ESP_LOGI(TAG, "fire_turret: %d", packet->fire_turret);
     //ESP_LOGI(TAG, "activate_fw: %d", packet->activate_fw);
-    ESP_LOGI(TAG, "fw_led: %d", packet->fw_led);
+    //ESP_LOGI(TAG, "fw_led: %d", packet->fw_led);
 
 
 	if(packet->message_type != TANK_COMMAND){
@@ -102,8 +286,8 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
 
         gpio_set_level(FW_NMOS, packet->fw_led);       //Flywheel Button Toggling - Toggle FW LED
         gpio_set_level(IR_S_NMOS, packet->fw_led);     //Turn IR Detectors on/off
-        gpio_set_level(IR_EMITS_NMOS, packet->fw_led);   //Turn IR Emitters on/off
-        gpio_set_level(FIRE_PIN, packet->fire_turret);   //Activate Firing Mechanism
+        gpio_set_level(IR_EMITS_NMOS, packet->fw_led); //Turn IR Emitters on/off
+        gpio_set_level(FIRE_PIN, packet->fire_turret); //Activate Firing Mechanism
 
         //Fire Button Monitoring
         //Activate Firing Servo and LED if Flywheels are active
@@ -204,10 +388,10 @@ void init_espnow_slave(void){
     // Define a receive function pointer using the typedef
     esp_now_recv_cb_t recv_cb_ptr = &recv_cb;
     ESP_ERROR_CHECK( esp_now_register_recv_cb(recv_cb_ptr) );  
-    ESP_LOGI(TAG,"Attempting to register recv_cb for tank");
+    ESP_LOGD(TAG,"Attempting to register recv_cb for tank");
 
     ESP_ERROR_CHECK( esp_now_register_send_cb(packet_sent_cb) );
-    ESP_LOGI(TAG,"Attempting to register send_espnow_data for tank");
+    ESP_LOGD(TAG,"Attempting to register send_espnow_data for tank");
     ESP_ERROR_CHECK( esp_now_set_pmk((const uint8_t *)MY_ESPNOW_PMK));
 
     const esp_now_peer_info_t broadcast_destination = {

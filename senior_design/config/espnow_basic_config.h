@@ -28,13 +28,13 @@
 
 #define IR_EMITS_NMOS 22 	//Pin to activate Emitters NMOS Low-Side Switch
 #define IR_S_NMOS 23		//Pin to activate Detectors NMOS Low-Side Switch
-#define IR_S_1 39 			//ADC 1_3 	- ADC 2_9 (26)
-#define IR_S_2 34 			//ADC 1_6
-#define IR_S_3_CENTER 35 	//ADC 1_7 	- ADC 2_7 (27)
-#define IR_S_4 32 			//ADC 1_4
-#define IR_S_5 33 			//ADC 1_5
-#define IR_S_6 36 			//ADC 1_0 	- ADC 2_8 (25)
-//#define IR_S_7 14 					- ADC 2_6 (14)
+//#define IR_S_1 14 		//				- ADC 2_6 (14)
+#define IR_S_2 36 			//-ADC 1_0 36	- ADC 2_8 (25)
+#define IR_S_3 39 			//-ADC 1_3 39 	- ADC 2_9 (26)
+#define IR_S_4 34 			//-ADC 1_6 34   - ADC 2_7 (27)
+#define IR_S_5 32 			//ADC 1_4 32
+#define IR_S_6 33 			//ADC 1_5 33
+#define IR_S_7 35 			//ADC 1_7 35 			
 
 //Remote Pins for Buttons and LEDs
 #define RF_BUT 12			//Right Forward Driving Button

@@ -18,8 +18,12 @@
 #include "esp_now.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
-//#include "driver/adc.h"
-//#include <esp_adc_cal.h>
+#include "driver/adc.h"
+#include <esp_adc_cal.h>
+//#include "esp_adc/adc_oneshot.h"
+//#include "esp_adc/adc_continous.h"
+//#include esp_adc/adc_cali.h 
+//#include esp_adc/adc_cali_scheme.h"
 
 #include "sdkconfig.h"
 #include "espnow_basic_config.h"
@@ -35,10 +39,6 @@ typedef struct {
     my_data_t data;
     int len;
 } recv_packet_t;
-
-
-static uint32_t rotate_turret = 0;
-//static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
 
 #define MY_ESPNOW_WIFI_MODE WIFI_MODE_STA
 #define MY_ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
@@ -126,11 +126,11 @@ void init_espnow_slave(void);
 void config_gpio_pins(void);
 
 /**************************************************
-* Title: adc_turret_init
-* Summary: initialize adc channels and turret LEDC channel
+* Title: turret_init
+* Summary: initialize turret LEDC channel
 * Param:
 * Return:
 **************************************************/
-void adc_turret_init();
+void turret_init();
 
 #endif //ESP_NOW_CUSTOM_H
