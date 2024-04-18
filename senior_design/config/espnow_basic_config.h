@@ -29,8 +29,8 @@
 #define IR_EMITS_NMOS 22 	//Pin to activate Emitters NMOS Low-Side Switch
 #define IR_S_NMOS 23		//Pin to activate Detectors NMOS Low-Side Switch
 //#define IR_S_1 14 		//				- ADC 2_6 (14)
-#define IR_S_2 36 			//-ADC 1_0 36	- ADC 2_8 (25)
-#define IR_S_3 39 			//-ADC 1_3 39 	- ADC 2_9 (26)
+//#define IR_S_2 36 		//-ADC 1_0 36	- ADC 2_8 (25)
+//#define IR_S_3 39 		//-ADC 1_3 39 	- ADC 2_9 (26)
 #define IR_S_4 34 			//-ADC 1_6 34   - ADC 2_7 (27)
 #define IR_S_5 32 			//ADC 1_4 32
 #define IR_S_6 33 			//ADC 1_5 33
@@ -52,7 +52,7 @@
 #define DUTY_RESOLUTION 		8
 #define PWM_FREQUENCY      		50 	// Hz
 #define DUTY_MIN_FIRE       	8   // 8% duty cycle (0 degrees)
-#define DUTY_MAX_FIRE       	20  // 20% duty cycle (90 degrees on this servo)
+#define DUTY_MAX_FIRE       	24  // 20% duty cycle (90 degrees on this servo)
 //Turret Servo Variables
 #define TURRET_PWM_CHANNEL  	LEDC_CHANNEL_1
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1

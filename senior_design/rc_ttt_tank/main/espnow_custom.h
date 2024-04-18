@@ -56,12 +56,12 @@ typedef struct {
 void target_tracking_task(void *pvParameter);
 
 /**************************************************
-* Title: turret_rotation
+* Title: turret_rotation_task
 * Summary: rotates the turret servo motor based on input from the sensors and emitters
 * Param:
 * Return:
 **************************************************/
-void turret_rotation(void);
+void turret_rotation_task(void *pvParameter);
 
 /**************************************************
 * Title: angle_adjustment
@@ -124,13 +124,5 @@ void init_espnow_slave(void);
 * Return:
 **************************************************/
 void config_gpio_pins(void);
-
-/**************************************************
-* Title: turret_init
-* Summary: initialize turret LEDC channel
-* Param:
-* Return:
-**************************************************/
-void turret_init();
 
 #endif //ESP_NOW_CUSTOM_H
