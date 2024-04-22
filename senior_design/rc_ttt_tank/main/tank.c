@@ -41,10 +41,6 @@
 #include "driver/gpio.h"
 #include "driver/adc.h"
 #include <esp_adc_cal.h>
-//#include "esp_adc/adc_oneshot.h"
-//#include "esp_adc/adc_continous.h"
-//#include esp_adc/adc_cali.h 
-//#include esp_adc/adc_cali_scheme.h"
 
 #include "espnow_custom.h"
 #include "sdkconfig.h"

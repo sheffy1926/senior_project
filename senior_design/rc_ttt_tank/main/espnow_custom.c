@@ -7,7 +7,6 @@ static uint32_t fire_servo = 0;
 static int rotate_turret = 0;
 // Initialize turret angle to midpoint (135 degrees) (22)
 static uint32_t angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1;
-//static uint32_t rotation_angle[11] = {10,12,14,16,19,22,24,26,28,30,32}; //min = 10, max = 32
 //static uint32_t rotation_angle[23] = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}; //min = 10, max = 32
 
 /**************************************************
@@ -26,12 +25,12 @@ void target_tracking_task(void *pvParameter) {
     //adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_11); //IR_S_3 --Replaced 6/Unusable
     adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_4
     adc1_config_channel_atten(ADC1_CHANNEL_4, ADC_ATTEN_DB_11); //IR_S_5
-    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_6 --CENTER
-    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_7
+    adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); //IR_S_6 --CENTER for Link
+    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); //IR_S_7 --CENTER for Zelda
     // Configure ADC 2
     //adc2_config_channel_atten(ADC2_CHANNEL_6, ADC_ATTEN_DB_11); //IR_S_1 --Unusable
 
-    //ADC1_CHANNEL_0,ADC1_CHANNEL_3
+    //ADC1_CHANNEL_0,ADC1_CHANNEL_3 
     int channels = 4;
     int adc_channels[4] = {ADC1_CHANNEL_6,ADC1_CHANNEL_4,ADC1_CHANNEL_5,ADC1_CHANNEL_7};
     int raw_data[4] = {0};
@@ -80,7 +79,7 @@ void target_tracking_task(void *pvParameter) {
         else {
             angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
         }
-        //Delay for 1 second
+        //Delay for .75 seconds
         //ESP_LOGI(TAG,"Rotate_Turret = %d",rotate_turret);
         vTaskDelay(750 / portTICK_PERIOD_MS);
     }
@@ -98,20 +97,20 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
     if (v_data[0] >= MIN_VOLTAGE && v_data[0] <= MAX_VOLTAGE) {
         if (v_sensor[0] == 5) {
             if (v_sensor[1] == 4){
-                angle_adjustment = -2;   // Rotate turret clockwise
+                angle_adjustment = -2;      // Rotate turret clockwise
             }
-            else if (v_sensor[1] == 7){
-                angle_adjustment = 2;  // Rotate turret counter clockwise
+            else if (v_sensor[1] == 6){     //6 For Zelda, 7 for Link
+                angle_adjustment = 2;       // Rotate turret counter clockwise
             }
             else {
-                angle_adjustment = -2;   // Rotate turret clockwise
+                angle_adjustment = -2;      // Rotate turret clockwise
             }
         } 
         else if (v_sensor[0] == 4){
-            angle_adjustment = -2;       // Rotate turret clockwise
+            angle_adjustment = -2;          // Rotate turret clockwise
         } 
-        else if (v_sensor[0] == 7){
-            angle_adjustment = 2;      // Rotate turret counter clockwise
+        else if (v_sensor[0] == 6){         //6 For Zelda, 7 for Link
+            angle_adjustment = 2;           // Rotate turret counter clockwise
         } 
         /*else if (v_sensor[0] == 3){
             if (v_sensor[1] == 7){
@@ -125,7 +124,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
             }
         }*/
         //If the center sensor has the highest value make minor adjustments to fine tune the direction of the turret.
-        else if (v_sensor[0] == 6) {
+        else if (v_sensor[0] == 7) {    //7 For Zelda, 6 for Link
             // Rotate one way to see if the value goes up, then rotate back if it goes down
             int original_angle = angle;
             angle_adjustment = 1;
@@ -134,7 +133,7 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
             vTaskDelay(10 / portTICK_PERIOD_MS);
 
             // If value increases, continue rotating in the same direction
-            int new_sensor_value = adc1_get_raw(adc_channels[2]);
+            int new_sensor_value = adc1_get_raw(adc_channels[3]); //3 for Zelda, 2 for Link
             float new_sensor_voltage = (new_sensor_value / (float)ADC_MAX_VALUE) * MAX_VOLTAGE;
             //If the voltage got worse rotate back to the original angle
             if (new_sensor_voltage < v_data[0]) {

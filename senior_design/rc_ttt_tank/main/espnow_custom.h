@@ -20,19 +20,11 @@
 #include "driver/gpio.h"
 #include "driver/adc.h"
 #include <esp_adc_cal.h>
-//#include "esp_adc/adc_oneshot.h"
-//#include "esp_adc/adc_continous.h"
-//#include esp_adc/adc_cali.h 
-//#include esp_adc/adc_cali_scheme.h"
 
 #include "sdkconfig.h"
 #include "espnow_basic_config.h"
 
 static EventGroupHandle_t s_evt_group;
-
-//Global Queue Handlers 
-/*static QueueHandle_t firing_queue;
-static QueueHandle_t turret_queue;*/
 
 typedef struct {
     esp_now_recv_info_t sender_mac_addr[ESP_NOW_ETH_ALEN];
