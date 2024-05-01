@@ -58,7 +58,8 @@
 #define TURRET_PWM_TIMER    	LEDC_TIMER_1
 #define DUTY_CYCLE_STEP			1
 #define MIN_DUTY_CYCLE 			10
-#define DUTY_CENTER				22	//(135 degrees - Centered) (MIN + MAX) / 2 
+//19 for Zelda and 22 for Link
+#define DUTY_CENTER				19	//(135 degrees - Centered) (MIN + MAX) / 2 
 #define MAX_DUTY_CYCLE			32
 
 #define ADC_WIDTH    	ADC_WIDTH_BIT_12
@@ -94,7 +95,7 @@ typedef struct __attribute__((packed)) {
 
 //ZELDA
 #define PAIR_2_TANK_MAC		{0xD8, 0x13, 0x2A, 0x7F, 0x9C, 0xFC}
-#define PAIR_2_REMOTE_MAC	{0x48, 0xE7, 0x29, 0xB5, 0xB2, 0x98}
+#define PAIR_2_REMOTE_MAC	{0x10, 0x06, 0x1C, 0x41, 0xBD, 0x08}
 #define PAIR_2_REMOTE_MAC_ARR	(uint8_t[])PAIR_2_REMOTE_MAC
 
 #if TANK_REMOTE_PAIR == LINK

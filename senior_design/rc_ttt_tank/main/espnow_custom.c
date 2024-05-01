@@ -6,7 +6,7 @@ static const char *TAG = "tank_espnow_custom";
 static uint32_t fire_servo = 0;
 static int rotate_turret = 0;
 // Initialize turret angle to midpoint (135 degrees) (22)
-static uint32_t angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1;
+static uint32_t angle = 19;//(MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; (22 for Link)
 //static uint32_t rotation_angle[23] = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}; //min = 10, max = 32
 
 /**************************************************
@@ -77,7 +77,8 @@ void target_tracking_task(void *pvParameter) {
         }
         //If the flywheels are off, then turn the sensors and rotation off
         else {
-            angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
+            //angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center for Link
+            angle = 19;
         }
         //Delay for .75 seconds
         //ESP_LOGI(TAG,"Rotate_Turret = %d",rotate_turret);
@@ -165,7 +166,8 @@ void angle_adjustment(int channels, float v_data[channels], int v_sensor[channel
     }
     //If no sensor is receiving a high enough value return to the starting position
     else {
-        angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center
+        //angle = (MIN_DUTY_CYCLE + MAX_DUTY_CYCLE) / 2 + 1; //22 is the center for Link
+        angle = 19;
     }
 }
 
@@ -311,13 +313,6 @@ void recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len){
             rotate_turret = 1;
             if(packet->fire_turret == 1){
                 fire_servo = 1;
-                /*angle ++;
-                if (angle < MIN_DUTY_CYCLE) {
-                    angle = MIN_DUTY_CYCLE;
-                } 
-                else if (angle > MAX_DUTY_CYCLE) {
-                    angle = MIN_DUTY_CYCLE;
-                }*/
                 vTaskDelay(5 / portTICK_PERIOD_MS); // Release for 5 milliseconds
             }
             else {
